@@ -2,6 +2,7 @@ package com.example.myapplication.presentation.log_in
 
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
 import android.os.Bundle
 import android.widget.Toast
 import androidx.compose.runtime.Composable
@@ -136,7 +137,9 @@ class LogInActivity: ComponentActivity() {
                 fontSize = textSize,
                 color = Color.Blue,
                 modifier = Modifier.clickable {
-                    currentContext?.startActivity(Intent(currentContext,SignUpActivity::class.java))
+                    currentContext?.startActivity(
+                        Intent(currentContext,SignUpActivity::class.java).addFlags(FLAG_ACTIVITY_REORDER_TO_FRONT)
+                    )
                 }
             )
         }
