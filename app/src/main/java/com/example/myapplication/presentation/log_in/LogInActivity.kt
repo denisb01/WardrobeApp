@@ -3,6 +3,7 @@ package com.example.myapplication.presentation.log_in
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+import android.content.IntentSender
 import android.os.Bundle
 import android.widget.Toast
 import androidx.compose.runtime.Composable
@@ -55,18 +56,48 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
+import com.example.myapplication.database.FirebaseController
 import com.example.myapplication.presentation.sign_up.SignUpActivity
+import com.google.android.gms.auth.api.identity.BeginSignInRequest
+import com.google.android.gms.auth.api.identity.Identity
+import com.google.android.gms.auth.api.identity.SignInClient
+import com.google.android.gms.common.api.ApiException
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.auth
 
 class LogInActivity: ComponentActivity() {
     private val email =  mutableStateOf("")
     private val password = mutableStateOf("")
     private var currentContext: Context? = null
 
+    private lateinit var auth: FirebaseAuth
+
+    private lateinit var oneTapClient: SignInClient
+    private lateinit var signInRequest: BeginSignInRequest
+
+    private val REQ_ONE_TAP = 100
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
             currentContext = LocalContext.current
+            auth = Firebase.auth
+
+            oneTapClient = Identity.getSignInClient(this)
+
+            signInRequest = BeginSignInRequest.builder()
+                .setGoogleIdTokenRequestOptions(
+                    BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
+                        .setSupported(true)
+                        // Your server's client ID, not your Android client ID.
+                        .setServerClientId(getString(R.string.web_client_id))
+                        // Only show accounts previously used to sign in.
+                        .setFilterByAuthorizedAccounts(false)
+                        .build())
+                .build()
 
             Screen()
         }
@@ -100,7 +131,7 @@ class LogInActivity: ComponentActivity() {
                     containerColor = Color(getColor(R.color.primary_orange))
                 ),
                 onClick = {
-                    Toast.makeText(currentContext, "Google", Toast.LENGTH_LONG).show()
+                    googleAuthentication()
                 }
             ) {
                Row(
@@ -231,7 +262,7 @@ class LogInActivity: ComponentActivity() {
                     .width(220.dp)
                     .height(40.dp),
                 onClick = {
-                    Toast.makeText(currentContext, "Log In", Toast.LENGTH_LONG).show()
+                    logUserIn()
                 },
             ) {
                 Text(
@@ -264,5 +295,76 @@ class LogInActivity: ComponentActivity() {
                 .width(280.dp)
                 .clip(shape = RoundedCornerShape(25.dp))
         )
+    }
+
+    private fun getUser(idToken: String)
+    {
+        val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+        auth.signInWithCredential(firebaseCredential)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    val db = FirebaseController(currentContext)
+                    db.addUserData(auth.currentUser)
+                    displayToast("Logged In successfully!")
+                } else {
+                    displayToast("Failed to Sign In. Try again later!")
+                }
+            }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        when (requestCode) {
+            REQ_ONE_TAP -> {
+                try {
+                    val googleCredential = oneTapClient.getSignInCredentialFromIntent(data)
+                    val idToken = googleCredential.googleIdToken
+
+                    if(idToken != null) {
+                        getUser(idToken)
+                    }
+                    else {
+                        displayToast("Selected Google Token not received!")
+                    }
+                } catch (e: ApiException) {
+                    displayToast("Error, try again later!")
+                }
+            }
+        }
+    }
+
+    private fun googleAuthentication()
+    {
+        oneTapClient.beginSignIn(signInRequest)
+            .addOnSuccessListener(this) { result ->
+                try {
+                    startIntentSenderForResult(
+                        result.pendingIntent.intentSender, REQ_ONE_TAP,
+                        null, 0, 0, 0, null)
+                } catch (e: IntentSender.SendIntentException) {
+                    displayToast("Couldn't start Google Authentication!")
+                }
+            }
+            .addOnFailureListener(this) { _ ->
+                displayToast("No accounts found!")
+            }
+    }
+
+    private fun logUserIn()
+    {
+        auth.signInWithEmailAndPassword(email.value, password.value)
+            .addOnCompleteListener{ task ->
+                if (task.isSuccessful){
+                    displayToast("Logged In successfully!")
+                }
+                else{
+                    displayToast("Log In failed! Invalid email or password!")
+                }
+            }
+    }
+
+    private fun displayToast(s: String?) {
+        Toast.makeText(applicationContext, s, Toast.LENGTH_SHORT).show()
     }
 }

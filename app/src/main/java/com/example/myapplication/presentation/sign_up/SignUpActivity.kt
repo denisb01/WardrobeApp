@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
 import android.os.Bundle
+import android.text.TextUtils
+import android.util.Patterns
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,7 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -57,20 +58,31 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
+import com.example.myapplication.database.FirebaseController
 import com.example.myapplication.presentation.log_in.LogInActivity
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.auth
+import com.google.firebase.auth.userProfileChangeRequest
+
 
 class SignUpActivity: ComponentActivity() {
     private var currentContext: Context? = null
-    private val nameState = mutableStateOf("")
+    private val firstNameState = mutableStateOf("")
+    private val lastNameState = mutableStateOf("")
     private val emailState = mutableStateOf("")
-    private val phoneNumberState = mutableStateOf("")
     private val passwordState = mutableStateOf("")
+
+    private lateinit var auth: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
             currentContext = LocalContext.current
+            auth = Firebase.auth
+
 
             Screen()
         }
@@ -130,7 +142,7 @@ class SignUpActivity: ComponentActivity() {
                     containerColor = Color(getColor(R.color.primary_orange))
                 ),
                 onClick = {
-                    Toast.makeText(currentContext, "Google", Toast.LENGTH_LONG).show()
+                    signUpUser()
                 },
                 modifier = Modifier
                     .width(260.dp)
@@ -185,8 +197,15 @@ class SignUpActivity: ComponentActivity() {
         ) {
             CredentialField(
                 fieldIcon = Icons.Rounded.Person,
-                state = nameState,
-                placeholderText = "Full Name",
+                state = firstNameState,
+                placeholderText = "First Name",
+                keyboardType = KeyboardType.Text
+            )
+
+            CredentialField(
+                fieldIcon = Icons.Rounded.Person,
+                state = lastNameState,
+                placeholderText = "Last Number",
                 keyboardType = KeyboardType.Text
             )
 
@@ -195,13 +214,6 @@ class SignUpActivity: ComponentActivity() {
                 state = emailState,
                 placeholderText = "Email",
                 keyboardType = KeyboardType.Email
-            )
-
-            CredentialField(
-                fieldIcon = Icons.Rounded.Phone,
-                state = phoneNumberState,
-                placeholderText = "Phone Number",
-                keyboardType = KeyboardType.Phone
             )
 
             CredentialField(
@@ -266,6 +278,90 @@ class SignUpActivity: ComponentActivity() {
                     .fillMaxWidth(0.8f)
                     .padding(0.dp, 10.dp)
             )
+        }
+    }
+
+    private fun isValidEmail(target: CharSequence): Boolean {
+        return !TextUtils.isEmpty(target) && Patterns.EMAIL_ADDRESS.matcher(target).matches()
+    }
+    private fun checkCredentials() : Boolean
+    {
+        if (!isValidEmail(emailState.value)){
+            Toast.makeText(currentContext,"Invalid Email Address!",Toast.LENGTH_SHORT).show()
+            return false
+        }
+
+        if (firstNameState.value.isEmpty()){
+            Toast.makeText(currentContext,"First Name can't be blank!",Toast.LENGTH_SHORT).show()
+            return false
+        }
+
+        if (lastNameState.value.isEmpty()){
+            Toast.makeText(currentContext,"Last Name can't be blank!",Toast.LENGTH_SHORT).show()
+            return false
+        }
+
+        if (passwordState.value.isEmpty()){
+            Toast.makeText(currentContext,"Password can't be blank!",Toast.LENGTH_SHORT).show()
+            return false
+        }
+
+        if (passwordState.value.length < 6){
+            Toast.makeText(currentContext,"Password must be at least 6 characters long!",Toast.LENGTH_SHORT).show()
+            return false
+        }
+
+        return true
+    }
+
+    private fun updateUserDisplayName(user: FirebaseUser?) {
+        if (user != null) {
+            val profileUpdates = userProfileChangeRequest {
+                displayName = firstNameState.value + " " + lastNameState.value
+            }
+
+            user.updateProfile(profileUpdates).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Toast.makeText(
+                        currentContext,
+                        "User added successfully!",
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                } else {
+                    Toast.makeText(
+                        currentContext,
+                        "Error adding user display name!",
+                        Toast.LENGTH_SHORT,
+                    ).show()
+
+                    finish()
+                }
+            }
+        }
+    }
+
+    private fun signUpUser()
+    {
+        if(checkCredentials()){
+            auth.createUserWithEmailAndPassword(emailState.value, passwordState.value)
+                .addOnCompleteListener{ task ->
+                    if (task.isSuccessful){
+                        val db = FirebaseController(currentContext)
+
+                        updateUserDisplayName(auth.currentUser)
+
+                        db.addUserData(auth.currentUser, firstNameState.value + " " + lastNameState.value)
+
+                        finish()
+                    }
+                    else{
+                        Toast.makeText(
+                            currentContext,
+                            "Error adding user! Check credentials again!",
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                }
         }
     }
 }

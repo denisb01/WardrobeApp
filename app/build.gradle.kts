@@ -56,6 +56,8 @@ dependencies {
     val lifecycle_version = "2.6.2"
     val arch_version = "2.2.0"
 
+    implementation("com.google.firebase:firebase-database")
+
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
     // ViewModel utilities for Compose
