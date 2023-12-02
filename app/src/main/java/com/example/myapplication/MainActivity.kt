@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -34,17 +35,44 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.presentation.app.AppActivity
 import com.example.myapplication.presentation.log_in.LogInActivity
 import com.example.myapplication.presentation.sign_up.SignUpActivity
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.auth
 
 class MainActivity : ComponentActivity() {
+    companion object {
+        const val COMPOSE_REQUEST_CODE = 101
+    }
+
     private var currentContext: Context? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             currentContext = LocalContext.current
 
             Screen()
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        when (requestCode) {
+            COMPOSE_REQUEST_CODE -> if (resultCode == RESULT_OK){
+                val auth = Firebase.auth
+
+                if(auth.currentUser != null){
+                    currentContext?.startActivity(
+                        Intent(currentContext, AppActivity::class.java).addFlags(FLAG_ACTIVITY_REORDER_TO_FRONT)
+                    )
+
+                    finish()
+                }
+            }
+            else -> super.onActivityResult(requestCode, resultCode, data)
         }
     }
 
@@ -121,7 +149,11 @@ class MainActivity : ComponentActivity() {
                 },
                 modifier = Modifier
                     .width(280.dp)
-                    .shadow(elevation = 20.dp, spotColor = Color.Black, ambientColor = Color.Transparent)
+                    .shadow(
+                        elevation = 20.dp,
+                        spotColor = Color.Black,
+                        ambientColor = Color.Transparent
+                    )
             ) {
                 Text(
                     text = "Log In",
@@ -141,7 +173,11 @@ class MainActivity : ComponentActivity() {
                 },
                 modifier = Modifier
                     .width(280.dp)
-                    .shadow(elevation = 20.dp, spotColor = Color.Black, ambientColor = Color.Transparent)
+                    .shadow(
+                        elevation = 20.dp,
+                        spotColor = Color.Black,
+                        ambientColor = Color.Transparent
+                    )
             ) {
                 Text(
                     text = "Sign Up",
@@ -167,9 +203,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startLogInActivity(){
-        currentContext?.startActivity(
-            Intent(currentContext, LogInActivity::class.java).addFlags(FLAG_ACTIVITY_REORDER_TO_FRONT)
-        )
+        val composeIntent = Intent(this, LogInActivity::class.java)
+
+        startActivityForResult(composeIntent, COMPOSE_REQUEST_CODE)
     }
 
     private fun startSignUpActivity(){

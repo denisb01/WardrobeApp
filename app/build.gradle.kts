@@ -51,12 +51,16 @@ android {
 }
 
 dependencies {
+    implementation("com.google.android.engage:engage-core:1.3.1")
     val nav_version = "2.7.5"
 
     val lifecycle_version = "2.6.2"
     val arch_version = "2.2.0"
 
     implementation("com.google.firebase:firebase-database")
+
+    implementation("androidx.compose.material:material:1.5.4")
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")

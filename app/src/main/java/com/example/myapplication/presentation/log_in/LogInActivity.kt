@@ -1,5 +1,6 @@
 package com.example.myapplication.presentation.log_in
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
@@ -306,6 +307,7 @@ class LogInActivity: ComponentActivity() {
                     val db = FirebaseController(currentContext)
                     db.addUserData(auth.currentUser)
                     displayToast("Logged In successfully!")
+                    sendResult()
                 } else {
                     displayToast("Failed to Sign In. Try again later!")
                 }
@@ -357,11 +359,21 @@ class LogInActivity: ComponentActivity() {
             .addOnCompleteListener{ task ->
                 if (task.isSuccessful){
                     displayToast("Logged In successfully!")
+                    sendResult()
                 }
                 else{
                     displayToast("Log In failed! Invalid email or password!")
                 }
             }
+    }
+
+    private fun sendResult() {
+
+        val returnIntent = Intent()
+
+        setResult(Activity.RESULT_OK, returnIntent)
+
+        finish()
     }
 
     private fun displayToast(s: String?) {

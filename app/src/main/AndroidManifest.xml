@@ -28,5 +28,7 @@
         </activity>
         <activity android:name=".presentation.sign_up.SignUpActivity">
         </activity>
+        <activity android:name=".presentation.app.AppActivity">
+        </activity>
     </application>
 </manifest>
