@@ -55,6 +55,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             currentContext = LocalContext.current
 
+            startLoggedInActivity()
+
             Screen()
         }
     }
@@ -62,17 +64,22 @@ class MainActivity : ComponentActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {
             COMPOSE_REQUEST_CODE -> if (resultCode == RESULT_OK){
-                val auth = Firebase.auth
-
-                if(auth.currentUser != null){
-                    currentContext?.startActivity(
-                        Intent(currentContext, AppActivity::class.java).addFlags(FLAG_ACTIVITY_REORDER_TO_FRONT)
-                    )
-
-                    finish()
-                }
+                startLoggedInActivity()
             }
             else -> super.onActivityResult(requestCode, resultCode, data)
+        }
+    }
+
+    private fun startLoggedInActivity()
+    {
+        val auth = Firebase.auth
+
+        if(auth.currentUser != null){
+            currentContext?.startActivity(
+                Intent(currentContext, AppActivity::class.java).addFlags(FLAG_ACTIVITY_REORDER_TO_FRONT)
+            )
+            
+            finish()
         }
     }
 

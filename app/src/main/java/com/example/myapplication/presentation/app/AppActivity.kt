@@ -19,17 +19,24 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.HelpCenter
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Man
+import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.rounded.AccountBox
 import androidx.compose.material.icons.rounded.Camera
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.myapplication.MainActivity
 import com.example.myapplication.R
 import com.example.myapplication.navigation.Navigation
 import com.example.myapplication.navigation.Screen
@@ -98,6 +106,15 @@ class AppActivity: ComponentActivity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        when (requestCode) {
+            REQUEST_IMAGE_CAPTURE -> if (resultCode == RESULT_OK){
+                
+            }
+            else -> super.onActivityResult(requestCode, resultCode, data)
+        }
+    }
+
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun AppScreen() {
@@ -127,8 +144,8 @@ class AppActivity: ComponentActivity() {
                 drawCircle(
                     Brush.linearGradient(
                         colors = listOf(
+                            Color(currentContext.getColor(R.color.secondary_orange)),
                             Color(currentContext.getColor(R.color.primary_orange)),
-                            Color(currentContext.getColor(R.color.secondary_orange))
                         )
                     ),
                     radius = 360.dp.toPx()
@@ -143,7 +160,8 @@ class AppActivity: ComponentActivity() {
             containerColor = Color.White,
             actions = {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -286,6 +304,184 @@ class AppActivity: ComponentActivity() {
 
     }
 
+    @Composable
+    fun DrawerHeaderSection()
+    {
+        val color = getColor(R.color.primary_orange)
+        Column (
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.20f)
+                .background(Color.White)
+        ){
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.5f)
+                    .background(Color(color))
+            ){
+                Text(
+                    text = "Account",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Row(
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.95f)
+                    .background(Color(0x1feb971c))
+            ){
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = auth.currentUser?.displayName.toString(),
+                        color = Color(color),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = auth.currentUser?.email.toString(),
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                    )
+                }
+                Icon(
+                    Icons.Rounded.AccountBox,
+                    "Icon",
+                    modifier = Modifier
+                        .size(50.dp)
+                    )
+            }
+            Divider(
+                thickness = 2.dp,
+                color = Color(getColor(R.color.primary_orange)),
+                modifier = Modifier.fillMaxWidth(0.9f)
+            )
+        }
+    }
+
+    @Composable
+    fun DrawerButton(buttonIcon: ImageVector, buttonText: String, buttonAction: () -> Unit)
+    {
+        IconButton(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp)
+                .background(Color.White),
+            onClick = buttonAction
+        ) {
+            Row (
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxSize()
+            ){
+                Spacer(modifier = Modifier.fillMaxWidth(0.02f))
+                Icon(
+                    buttonIcon,
+                    "Icon",
+                    modifier = Modifier.size(35.dp),
+                    tint = Color(getColor(R.color.primary_orange))
+                )
+                Text(
+                    text = buttonText,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(getColor(R.color.primary_orange)),
+                    modifier = Modifier.fillMaxWidth(0.8f),
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun DrawerButtonSection(paddingValues: PaddingValues) {
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+                    .background(Color.White)
+            ) {
+                Spacer(modifier = Modifier.fillMaxHeight(0.025f))
+                DrawerButton(
+                    buttonIcon = Icons.Filled.ManageAccounts,
+                    buttonText = "Account Settings",
+                    buttonAction = {
+
+                    }
+                )
+
+                DrawerButton(
+                    buttonIcon = Icons.Filled.HelpCenter,
+                    buttonText = "Account Help",
+                    buttonAction = {
+
+                    }
+                )
+
+                DrawerButton(
+                    buttonIcon = Icons.Filled.Info,
+                    buttonText = "App Info",
+                    buttonAction = {
+
+                    }
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun DrawerFooterSection()
+    {
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxHeight(0.15f)
+                    .fillMaxWidth()
+                    .background(Color.White)
+            ) {
+                Divider(
+                    thickness = 2.dp,
+                    color = Color(getColor(R.color.primary_orange)),
+                    modifier = Modifier.fillMaxWidth(0.9f)
+                )
+                DrawerButton(
+                    buttonIcon = Icons.Filled.ExitToApp,
+                    buttonText = "Log Out",
+                    buttonAction = {
+                        if (auth.currentUser != null) {
+                            auth.signOut()
+
+
+                            currentContext?.startActivity(
+                                Intent(
+                                    currentContext,
+                                    MainActivity::class.java
+                                ).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                            )
+
+                            finish()
+                        }
+                    }
+                )
+            }
+        }
+    }
+
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun NavigationAndDrawer() {
@@ -293,13 +489,28 @@ class AppActivity: ComponentActivity() {
             ModalNavigationDrawer(
                 drawerState = drawerState.value,
                 drawerContent = {
-                    ModalDrawerSheet {
-                        Text(text = "Logged in as: " + auth.currentUser?.displayName.toString())
+                    ModalDrawerSheet(
+                        modifier = Modifier
+                            .fillMaxWidth(0.6f)
+                            .fillMaxHeight()
+                    ) {
+                        Scaffold(
+                            topBar = {
+                                DrawerHeaderSection()
+                            },
+                            bottomBar = {
+                                DrawerFooterSection()
+                            }
+                        ) { paddingValues ->
+                            DrawerButtonSection(paddingValues)
+                        }
                     }
                 },
                 gesturesEnabled = true
             ) {
-                Navigation(navController)
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Navigation(navController)
+                }
             }
         }
     }
