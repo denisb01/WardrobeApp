@@ -3,8 +3,11 @@ package com.example.myapplication.presentation.app
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.media.ThumbnailUtils
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -71,35 +74,45 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.MainActivity
 import com.example.myapplication.R
+import com.example.myapplication.data.Prediction
+import com.example.myapplication.database.FirebaseController
+import com.example.myapplication.ml.Detect
 import com.example.myapplication.navigation.Navigation
 import com.example.myapplication.navigation.Screen
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
+import org.tensorflow.lite.DataType
+import org.tensorflow.lite.support.common.FileUtil
+import org.tensorflow.lite.support.common.ops.CastOp
+import org.tensorflow.lite.support.common.ops.NormalizeOp
+import org.tensorflow.lite.support.image.ImageProcessor
+import org.tensorflow.lite.support.image.TensorImage
+import org.tensorflow.lite.support.image.ops.ResizeOp
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 class AppActivity: ComponentActivity() {
-    companion object {
-        lateinit var currentContext: Context
-    }
-
     private var clothesButtonState = mutableStateOf(false)
     private var outfitsButtonState = mutableStateOf(true)
     private var settingsButtonState = mutableStateOf(true)
     private var helpButtonState = mutableStateOf(true)
 
-    private lateinit var auth: FirebaseAuth
+    private val auth: FirebaseAuth = Firebase.auth
 
     private val REQUEST_IMAGE_CAPTURE = 102
     private lateinit var navController: NavController
+    private lateinit var currentContext: Context
 
     @OptIn(ExperimentalMaterial3Api::class)
     private var drawerState = mutableStateOf(DrawerState(DrawerValue.Closed))
+
+    private val imageSize = 320
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             currentContext = LocalContext.current
-            auth = Firebase.auth
             navController = rememberNavController()
 
             AppScreen()
@@ -107,12 +120,75 @@ class AppActivity: ComponentActivity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        when (requestCode) {
-            REQUEST_IMAGE_CAPTURE -> if (resultCode == RESULT_OK){
-                
+        if (resultCode == RESULT_OK) {
+            val bitmap = data?.extras?.get("data") as Bitmap
+
+            when (requestCode) {
+                REQUEST_IMAGE_CAPTURE -> if (resultCode == RESULT_OK) {
+                    val firebaseController = FirebaseController(currentContext)
+
+                    val detection = objectDetection(bitmap)
+
+                    if (detection.accuracy > 90) {
+                        firebaseController.addClothesImageToFirebase(
+                            auth.currentUser!!,
+                            bitmap,
+                            detection
+                        )
+                        navController.navigate(Screen.ClothesScreen.route)
+                    } else {
+                        Toast.makeText(
+                            currentContext,
+                            "Couldn't classify image!",
+                            Toast.LENGTH_LONG
+                        )
+                    }
+                }
+
+                else -> super.onActivityResult(requestCode, resultCode, data)
             }
-            else -> super.onActivityResult(requestCode, resultCode, data)
         }
+    }
+
+    private fun objectDetection(image: Bitmap): Prediction
+    {
+        val imageProcessor = ImageProcessor.Builder()
+            .add(ResizeOp(imageSize, imageSize, ResizeOp.ResizeMethod.NEAREST_NEIGHBOR))
+            .add(NormalizeOp(floatArrayOf(0f), floatArrayOf(255f)))
+            .add(CastOp(DataType.FLOAT32))
+            .build()
+
+        val model = Detect.newInstance(currentContext)
+
+        var tfImageBuffer = TensorImage(DataType.FLOAT32)
+        tfImageBuffer.load(image)
+        tfImageBuffer = imageProcessor.process(tfImageBuffer)
+
+        // Runs model inference and gets result.
+        val outputs = model.process(tfImageBuffer.tensorBuffer)
+        // Predictions
+        val feature0 = outputs.outputFeature0AsTensorBuffer.floatArray
+        // Positions
+        val feature1 = outputs.outputFeature1AsTensorBuffer.floatArray
+        // Number of predictions
+        val feature2 = outputs.outputFeature2AsTensorBuffer.floatArray
+        // Labels
+        val feature3 = outputs.outputFeature3AsTensorBuffer.floatArray
+
+        val labels = FileUtil.loadLabels(currentContext, "labels.txt")
+
+        Toast.makeText(currentContext, labels[feature3[0].toInt()] + " : " + (feature0[0]*100).toString(), Toast.LENGTH_SHORT).show()
+
+        val prediction = Prediction(labels[feature3[0].toInt()], feature0[0]*100, feature1)
+
+        Log.i("AIM","Detections")
+        for (i in 0..9){
+            Log.i("AIM",labels[feature3[i].toInt()] + " : " + (feature0[i]*100).toString())
+        }
+
+        model.close()
+
+        return prediction
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -167,7 +243,7 @@ class AppActivity: ComponentActivity() {
                 ) {
                     BottomMenuButton(
                         navigationRoute = {
-                            navigateToClothes()
+                            navController.navigate(Screen.ClothesScreen.route)
                         },
                         buttonText = "Clothes",
                         buttonIcon = Icons.Filled.PhotoLibrary,
@@ -175,7 +251,7 @@ class AppActivity: ComponentActivity() {
                     )
                     BottomMenuButton(
                         navigationRoute = {
-                            navigateToOutfits()
+                            navController.navigate(Screen.OutfitsScreen.route)
                         },
                         buttonText = "Outfits",
                         buttonIcon = Icons.Filled.Man,
@@ -351,20 +427,21 @@ class AppActivity: ComponentActivity() {
                     )
                     Text(
                         text = auth.currentUser?.email.toString(),
-                        color = Color.Gray,
+                        color = Color(color),
                         fontSize = 12.sp,
                     )
                 }
                 Icon(
                     Icons.Rounded.AccountBox,
                     "Icon",
+                    tint = Color(color),
                     modifier = Modifier
                         .size(50.dp)
                     )
             }
             Divider(
                 thickness = 2.dp,
-                color = Color(getColor(R.color.primary_orange)),
+                color = Color(color),
                 modifier = Modifier.fillMaxWidth(0.9f)
             )
         }
@@ -467,7 +544,7 @@ class AppActivity: ComponentActivity() {
                             auth.signOut()
 
 
-                            currentContext?.startActivity(
+                            currentContext.startActivity(
                                 Intent(
                                     currentContext,
                                     MainActivity::class.java
@@ -508,8 +585,12 @@ class AppActivity: ComponentActivity() {
                 },
                 gesturesEnabled = true
             ) {
+                val statesList = listOf(
+                    clothesButtonState,outfitsButtonState,settingsButtonState,helpButtonState
+                )
+
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                    Navigation(navController)
+                    Navigation(navController, currentContext, statesList)
                 }
             }
         }
@@ -522,21 +603,5 @@ class AppActivity: ComponentActivity() {
         } catch (e: ActivityNotFoundException) {
             Toast.makeText(currentContext, "Couldn't start the camera!", Toast.LENGTH_LONG).show()
         }
-    }
-
-    private fun navigateToClothes(){
-        clothesButtonState.value = false
-        outfitsButtonState.value = true
-        settingsButtonState.value = true
-        helpButtonState.value = true
-        navController.navigate(Screen.ClothesScreen.route)
-    }
-
-    private fun navigateToOutfits(){
-        clothesButtonState.value = true
-        outfitsButtonState.value = false
-        settingsButtonState.value = true
-        helpButtonState.value = true
-        navController.navigate(Screen.OutfitsScreen.route)
     }
 }

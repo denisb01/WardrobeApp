@@ -39,6 +39,7 @@ android {
     }
     buildFeatures {
         compose = true
+        mlModelBinding = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.4.3"
@@ -51,12 +52,17 @@ android {
 }
 
 dependencies {
-    implementation("com.google.android.engage:engage-core:1.3.1")
+
+    implementation("org.tensorflow:tensorflow-lite-support:0.1.0")
+    implementation("org.tensorflow:tensorflow-lite-metadata:0.1.0")
+
     val nav_version = "2.7.5"
 
     val lifecycle_version = "2.6.2"
     val arch_version = "2.2.0"
 
+    implementation("com.google.firebase:firebase-storage")
+    implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("com.google.firebase:firebase-database")
 
     implementation("androidx.compose.material:material:1.5.4")

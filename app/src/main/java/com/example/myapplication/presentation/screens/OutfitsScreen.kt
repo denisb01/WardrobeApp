@@ -1,5 +1,6 @@
 package com.example.myapplication.presentation.screens
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,7 +23,7 @@ import com.example.myapplication.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OutfitsScreen(navController: NavController)
+fun OutfitsScreen(navController: NavController, context: Context)
 {
     Scaffold (
         containerColor = Color.Transparent,

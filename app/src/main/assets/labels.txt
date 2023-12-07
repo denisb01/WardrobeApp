@@ -1,0 +1,8 @@
+Dress
+Hat
+Longsleeve
+Pants
+Shoes
+Shorts
+Shortsleeve
+Skirt
