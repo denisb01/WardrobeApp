@@ -58,10 +58,10 @@ class FirebaseController(
         }
     }
 
-    private fun addImageToDatabase(user: FirebaseUser?, image: FirebaseImageModel)
+    private fun addImageToDatabase(user: FirebaseUser?, imageName: String,image: FirebaseImageModel)
     {
         if(user != null) {
-            database.child("images").child(user.uid).child(image.name+"_"+image.label).setValue(image)
+            database.child("images").child(user.uid).child(imageName).setValue(image)
                 .addOnSuccessListener {
                     Log.i("URL", "Success")
                 }
@@ -71,7 +71,7 @@ class FirebaseController(
         }
     }
 
-    fun addClothesImageToFirebase(user: FirebaseUser, image: Bitmap, prediction: Prediction) {
+    fun addClothesImageToFirebase(user: FirebaseUser, imageData: FirebaseImageModel, image: Bitmap) {
         if(user != null){
             val imageUri = getImageUri(image)
             val dateFormat = SimpleDateFormat("yyyy-MM-dd HH-mm-ss")
@@ -80,12 +80,13 @@ class FirebaseController(
             uploadTask.addOnSuccessListener {
                 Toast.makeText(currentContext, "Success", Toast.LENGTH_LONG).show()
                 it.storage.downloadUrl.addOnSuccessListener { uri ->
-                    addImageToDatabase(user, FirebaseImageModel(dateFormat.format(Date()), uri.toString(), prediction.label, prediction.accuracy.toLong()))
+                    imageData.uri = uri.toString()
+                    addImageToDatabase(user, dateFormat.format(Date()), imageData)
                 }.addOnFailureListener{
-                    Log.i("URL", "Fail")
+                    Toast.makeText(currentContext, "Failed to add image to storage!", Toast.LENGTH_LONG).show()
                 }
             }.addOnFailureListener {
-                Toast.makeText(currentContext, "Failed", Toast.LENGTH_LONG).show()
+                Toast.makeText(currentContext, "Failed to add data to database!", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -132,17 +133,5 @@ class FirebaseController(
 
         awaitClose { userImagesReference.removeEventListener(listener) }
     }
-
-//    fun getImages(user: FirebaseUser){
-//        database.child("images").child(user.uid).get().addOnSuccessListener {
-//            val images = it.children
-//
-//            for(image in images) {
-//                Log.i("URL", "Image ${image.key.toString()} = ${image.getValue(String::class.java)}")
-//            }
-//        }.addOnFailureListener{
-//            Log.e("URL", "Error getting data", it)
-//        }
-//    }
 
 }

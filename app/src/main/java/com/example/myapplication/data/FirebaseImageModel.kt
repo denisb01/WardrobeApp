@@ -2,9 +2,11 @@ package com.example.myapplication.data
 
 data class FirebaseImageModel(
     val name: String = "",
-    val uri: String = "",
-    val label: String = "",
-    val accuracy: Long = 0
-){
-
-}
+    var uri: String = "",
+    val type: String = "",
+    val color: String = "",
+    val age: String = "",
+    val size: String = "",
+    val material: String = "",
+    val gender: String = ""
+)

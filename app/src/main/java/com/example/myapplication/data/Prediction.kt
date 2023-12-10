@@ -1,7 +1,9 @@
 package com.example.myapplication.data
 
+import android.graphics.Bitmap
+
 data class Prediction(
-    val label: String,
+    val type: String,
     val accuracy: Float,
-    val position: FloatArray
+    val bitmap: Bitmap
 )

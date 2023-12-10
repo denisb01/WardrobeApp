@@ -4,15 +4,17 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.media.ThumbnailUtils
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.provider.MediaStore
-import android.util.Log
+import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,9 +27,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.HelpCenter
@@ -39,10 +48,17 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.AccountBox
 import androidx.compose.material.icons.rounded.Camera
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -51,34 +67,46 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.MainActivity
 import com.example.myapplication.R
+import com.example.myapplication.data.FirebaseImageModel
 import com.example.myapplication.data.Prediction
 import com.example.myapplication.database.FirebaseController
 import com.example.myapplication.ml.Detect
 import com.example.myapplication.navigation.Navigation
 import com.example.myapplication.navigation.Screen
+import com.example.myapplication.presentation.screens.clothesSearchCriteria
+import com.example.myapplication.presentation.screens.displaySearchedImages
+import com.example.myapplication.presentation.screens.displaySearchedOutfits
+import com.example.myapplication.presentation.screens.outfitsSearchCriteria
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
@@ -89,10 +117,14 @@ import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 class AppActivity: ComponentActivity() {
+    companion object{
+        val REQUEST_IMAGE_CAPTURE = 102
+        val CLOTHES_SPEECH_REQUEST_CODE = 103
+        val OUTFITS_SPEECH_REQUEST_CODE = 104
+    }
+
     private var clothesButtonState = mutableStateOf(false)
     private var outfitsButtonState = mutableStateOf(true)
     private var settingsButtonState = mutableStateOf(true)
@@ -100,7 +132,6 @@ class AppActivity: ComponentActivity() {
 
     private val auth: FirebaseAuth = Firebase.auth
 
-    private val REQUEST_IMAGE_CAPTURE = 102
     private lateinit var navController: NavController
     private lateinit var currentContext: Context
 
@@ -109,9 +140,27 @@ class AppActivity: ComponentActivity() {
 
     private val imageSize = 320
 
+    private var displayDialog = mutableStateOf(false)
+    private var enableSaveButton = mutableStateOf(false)
+
+    private var displayData: Prediction? = null
+
+    // Item features states
+    private val nameState = mutableStateOf("")
+    private val typeState = mutableStateOf("")
+    private val colorState =  mutableStateOf("")
+    private val ageState = mutableStateOf("")
+    private val sizeState = mutableStateOf("")
+    private val materialState = mutableStateOf("")
+    private val genderState = mutableStateOf("")
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            if (displayDialog.value){
+                ImageInfoEditDialog()
+            }
+
             currentContext = LocalContext.current
             navController = rememberNavController()
 
@@ -119,35 +168,392 @@ class AppActivity: ComponentActivity() {
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (resultCode == RESULT_OK) {
-            val bitmap = data?.extras?.get("data") as Bitmap
+    @Composable
+    fun DialogHeader()
+    {
+        Row (
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.1f)
+                .background(Color(getColor(R.color.primary_orange)))
+        ){
+            Text(
+                text = "Clothing Item Features",
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
 
-            when (requestCode) {
-                REQUEST_IMAGE_CAPTURE -> if (resultCode == RESULT_OK) {
-                    val firebaseController = FirebaseController(currentContext)
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun DialogField(fieldValue: MutableState<String>, readOnly: Boolean)
+    {
+        val interaction = remember { MutableInteractionSource() }
+        BasicTextField(
+            value = fieldValue.value,
+            onValueChange = {
+                fieldValue.value = it
 
-                    val detection = objectDetection(bitmap)
+                if(fieldValue.value.isEmpty()){
+                    enableSaveButton.value = false
+                }
+            },
+            readOnly = readOnly,
+            enabled = !readOnly,
+            interactionSource = interaction,
+            decorationBox = {inner ->
+                TextFieldDefaults.TextFieldDecorationBox(
+                    value = fieldValue.value,
+                    innerTextField = inner,
+                    enabled = !readOnly,
+                    singleLine = true,
+                    visualTransformation = VisualTransformation.None,
+                    interactionSource = interaction,
+                    contentPadding = PaddingValues(8.dp, 0.dp),
+                    colors = TextFieldDefaults.textFieldColors(
+                        containerColor = Color(getColor(R.color.primary_orange)),
+                    )
+                )
+            },
+            singleLine = true,
+            textStyle = TextStyle(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            ),
+            modifier = Modifier
+                .width(150.dp)
+                .height(30.dp)
+        )
+    }
 
-                    if (detection.accuracy > 90) {
-                        firebaseController.addClothesImageToFirebase(
-                            auth.currentUser!!,
-                            bitmap,
-                            detection
+    @Composable
+    fun DialogInput(fieldValue: MutableState<String>, text: String, readOnly: Boolean)
+    {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .padding(10.dp, 0.dp)
+        ){
+            Text(
+                text = text,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(getColor(R.color.primary_orange))
+            )
+            DialogField(fieldValue = fieldValue, readOnly = readOnly )
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun SelectionBox(fieldValue: MutableState<String>, selectionItems: List<String>) {
+        val expanded = remember { mutableStateOf(false) }
+
+        Box {
+            ExposedDropdownMenuBox(
+                expanded = expanded.value,
+                onExpandedChange = {
+                    expanded.value = !expanded.value
+                }
+            ) {
+                val interaction = remember { MutableInteractionSource() }
+                BasicTextField(
+                    value = fieldValue.value,
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = false,
+                    interactionSource = interaction,
+                    decorationBox = {inner ->
+                        TextFieldDefaults.TextFieldDecorationBox(
+                            value = fieldValue.value,
+                            innerTextField = inner,
+                            enabled = false,
+                            singleLine = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded.value) },
+                            visualTransformation = VisualTransformation.None,
+                            interactionSource = interaction,
+                            contentPadding = PaddingValues(8.dp, 0.dp),
+                            colors = TextFieldDefaults.textFieldColors(
+                                containerColor = Color(getColor(R.color.primary_orange))
+                            )
                         )
-                        navController.navigate(Screen.ClothesScreen.route)
-                    } else {
-                        Toast.makeText(
-                            currentContext,
-                            "Couldn't classify image!",
-                            Toast.LENGTH_LONG
+                    },
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White,
+                    ),
+                    modifier = Modifier
+                        .width(150.dp)
+                        .height(30.dp)
+                        .menuAnchor(),
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded.value,
+                    onDismissRequest = { expanded.value = false },
+                    modifier = Modifier
+                        .height(100.dp)
+                        .verticalScroll(rememberScrollState())
+                        .background(Color.White)
+                ) {
+                    selectionItems.forEach { item ->
+                        DropdownMenuItem(
+                            text = { Text(text = item, color = Color(getColor(R.color.primary_orange))) },
+                            onClick = {
+                                fieldValue.value = item
+                                expanded.value = false
+                            }
                         )
                     }
                 }
-
-                else -> super.onActivityResult(requestCode, resultCode, data)
             }
         }
+    }
+
+    @Composable
+    fun DialogSelection(fieldValue: MutableState<String>, text: String, selectionItems: List<String>)
+    {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .padding(10.dp, 0.dp)
+        ){
+            Text(
+                text = text,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(getColor(R.color.primary_orange))
+            )
+            SelectionBox(fieldValue, selectionItems)
+        }
+    }
+
+    @Composable
+    fun DialogFieldsSection()
+    {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.85f)
+                .verticalScroll(rememberScrollState())
+        ) {
+            typeState.value = displayData?.type.toString()
+
+            Image(
+                displayData?.bitmap?.asImageBitmap()!!, "Image",
+                modifier = Modifier
+                    .fillMaxSize(0.4f)
+                    .padding(0.dp, 5.dp)
+            )
+
+            DialogInput(fieldValue = nameState, text = "Item Name:", readOnly = false)
+            DialogInput(fieldValue = typeState, text = "Item Type:", readOnly = true)
+            DialogSelection(fieldValue = colorState, text = "Item Color:", listOf("Red","Green","Blue"))
+            DialogSelection(fieldValue = ageState, text = "Item For:", listOf("Adults","Children"))
+
+            when(typeState.value){
+                "Shoes" -> DialogSelection(fieldValue = sizeState, text = "Item Size:", listOf("36","37","38","39","40","41","42","43","44","45","46"))
+                else -> DialogSelection(fieldValue = sizeState, text = "Item Size:", listOf("XXS","XS","S","M","L","XL","XXL"))
+            }
+
+            DialogSelection(fieldValue = materialState, text = "Item Material:", listOf("Leather","Cotton","Silk","Linen","Nylon","Wool","Polyester"))
+            DialogSelection(fieldValue = genderState, text = "Item Gender:", listOf("Male","Female","Unisex"))
+
+            if (checkStates(listOf(nameState,typeState,colorState,ageState,sizeState,materialState,genderState))){
+                enableSaveButton.value = true
+            }
+        }
+    }
+
+    private fun checkStates(statesList: List<MutableState<String>>) : Boolean
+    {
+        for (item in statesList){
+            if (item.value.isEmpty()){
+                return false
+            }
+        }
+        return true
+    }
+
+    @Composable
+    fun DialogButton(onClickEvent : () -> Unit, text: String, icon: ImageVector, enabled: Boolean = true)
+    {
+        Button(
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(getColor(R.color.primary_orange))
+            ),
+            onClick = onClickEvent,
+            modifier = Modifier
+                .width(120.dp),
+            contentPadding = PaddingValues(0.dp),
+            enabled = enabled
+        ) {
+            Icon(icon, "Icon")
+            Spacer(modifier = Modifier.fillMaxWidth(0.08f))
+            Text(
+                text = text,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+    }
+
+    @Composable
+    fun DialogFooter()
+    {
+        Row (
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier.fillMaxSize()
+        ){
+            DialogButton(
+                onClickEvent = {
+                    displayDialog.value = false
+                    displayData = null
+                },
+                text = "Cancel",
+                icon = Icons.Filled.Cancel
+            )
+
+            DialogButton(
+                onClickEvent = {
+                    val firebaseController = FirebaseController(currentContext)
+                    firebaseController.addClothesImageToFirebase(
+                        auth.currentUser!!,
+                        FirebaseImageModel(
+                            name = nameState.value,
+                            type = typeState.value,
+                            color = colorState.value,
+                            age = ageState.value,
+                            size = sizeState.value,
+                            material = materialState.value,
+                            gender = genderState.value
+                        ),
+                        displayData?.bitmap!!
+                    )
+
+                    nameState.value = ""
+                    typeState.value = ""
+                    colorState.value = ""
+                    ageState.value = ""
+                    sizeState.value = ""
+                    materialState.value = ""
+                    genderState.value = ""
+
+                    displayDialog.value = false
+                    displayData = null
+
+                    enableSaveButton.value = false
+
+                    navController.navigate(Screen.ClothesScreen.route)
+                },
+                text = "Save",
+                icon = Icons.Filled.CheckCircle,
+                enabled = enableSaveButton.value
+            )
+        }
+    }
+
+    @Composable
+    fun ImageInfoEditDialog()
+    {
+        if (displayData != null) {
+            Dialog(
+                onDismissRequest = {
+                    
+                }
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(600.dp)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    DialogHeader()
+                    DialogFieldsSection()
+                    DialogFooter()
+                }
+            }
+        }
+    }
+
+    private fun processImage(data: Intent?)
+    {
+        val bitmap = data?.extras?.get("data") as Bitmap
+        val detection = objectDetection(bitmap)
+
+        if (detection.accuracy > 90) {
+            displayDialog.value = true
+            displayData = detection
+        } else {
+            Toast.makeText(
+                currentContext,
+                "Couldn't classify image!",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    private fun processClothesSpeechText(data: Intent?)
+    {
+        val spokenText: String? =
+            data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).let { results ->
+                results?.get(0)
+            }
+
+        if (spokenText != null) {
+            clothesSearchCriteria.value = spokenText
+            displaySearchedImages()
+        }
+    }
+
+    private fun processOutfitsSpeechText(data: Intent?)
+    {
+        val spokenText: String? =
+            data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).let { results ->
+                results?.get(0)
+            }
+
+        if (spokenText != null) {
+            outfitsSearchCriteria.value = spokenText
+            displaySearchedOutfits()
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+
+        when (requestCode) {
+            REQUEST_IMAGE_CAPTURE -> if (resultCode == RESULT_OK) {
+                processImage(data)
+            }
+            CLOTHES_SPEECH_REQUEST_CODE -> if (resultCode == RESULT_OK){
+                processClothesSpeechText(data)
+            }
+            OUTFITS_SPEECH_REQUEST_CODE -> if (resultCode == RESULT_OK){
+                processOutfitsSpeechText(data)
+            }
+            else -> super.onActivityResult(requestCode, resultCode, data)
+        }
+
     }
 
     private fun objectDetection(image: Bitmap): Prediction
@@ -177,14 +583,9 @@ class AppActivity: ComponentActivity() {
 
         val labels = FileUtil.loadLabels(currentContext, "labels.txt")
 
-        Toast.makeText(currentContext, labels[feature3[0].toInt()] + " : " + (feature0[0]*100).toString(), Toast.LENGTH_SHORT).show()
+//        Toast.makeText(currentContext, labels[feature3[0].toInt()] + " : " + (feature0[0]*100).toString(), Toast.LENGTH_SHORT).show()
 
-        val prediction = Prediction(labels[feature3[0].toInt()], feature0[0]*100, feature1)
-
-        Log.i("AIM","Detections")
-        for (i in 0..9){
-            Log.i("AIM",labels[feature3[i].toInt()] + " : " + (feature0[i]*100).toString())
-        }
+        val prediction = Prediction(labels[feature3[0].toInt()], feature0[0]*100, image)
 
         model.close()
 
@@ -260,7 +661,8 @@ class AppActivity: ComponentActivity() {
                     CameraButton()
                     BottomMenuButton(
                         navigationRoute = {
-
+//                            displayDialog.value = true
+//                            displayData = Prediction("Shoes",0.5f,BitmapFactory.decodeResource(currentContext.resources,R.drawable.image))
                         },
                         buttonText = "Settings",
                         buttonIcon = Icons.Filled.Settings,
