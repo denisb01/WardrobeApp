@@ -35,15 +35,16 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.myapplication.R
+import com.example.myapplication.data.FirebaseClothingItem
 import com.example.myapplication.data.FirebaseImageModel
 import com.example.myapplication.presentation.app.AppActivity
 
-val outfitsList = mutableStateOf(listOf<FirebaseImageModel>())
-var fullOutfitsList = listOf<FirebaseImageModel>()
+val outfitsList = mutableStateOf(listOf<FirebaseClothingItem>())
+var fullOutfitsList = listOf<FirebaseClothingItem>()
 
 val outfitsSearchCriteria = mutableStateOf("")
 
-fun displayOutfitCards(list: List<FirebaseImageModel>)
+fun displayOutfitCards(list: List<FirebaseClothingItem>)
 {
     outfitsList.value = list
 }
@@ -54,10 +55,10 @@ fun displaySearchedOutfits()
         displayImageCards(fullOutfitsList)
     }
     else{
-        val searchValuesList = mutableListOf<FirebaseImageModel>()
+        val searchValuesList = mutableListOf<FirebaseClothingItem>()
 
         for (image in fullOutfitsList){
-            if(image.name.toLowerCase().contains(outfitsSearchCriteria.value.toLowerCase())){
+            if(image.clothingItemData.name.toLowerCase().contains(outfitsSearchCriteria.value.toLowerCase())){
                 searchValuesList.add(image)
             }
         }
@@ -140,12 +141,12 @@ fun OutfitsCardsDisplay(context: Context)
                     modifier = Modifier.fillMaxSize()
                 ) {
                     AsyncImage(
-                        model = image.uri,
-                        contentDescription = image.name,
+                        model = image.clothingItemData.uri,
+                        contentDescription = image.clothingItemData.name,
                         modifier = Modifier
                             .fillMaxHeight(0.8f)
                     )
-                    Text(text = image.name)
+                    Text(text = image.clothingItemData.name)
                 }
             }
         }

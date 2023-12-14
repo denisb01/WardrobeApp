@@ -363,15 +363,15 @@ class AppActivity: ComponentActivity() {
 
             DialogInput(fieldValue = nameState, text = "Item Name:", readOnly = false)
             DialogInput(fieldValue = typeState, text = "Item Type:", readOnly = true)
-            DialogSelection(fieldValue = colorState, text = "Item Color:", listOf("Red","Green","Blue"))
-            DialogSelection(fieldValue = ageState, text = "Item For:", listOf("Adults","Children"))
+            DialogInput(fieldValue = colorState, text = "Item Color:", readOnly = false)
+            DialogInput(fieldValue = materialState, text = "Item Material:", readOnly = false)
 
             when(typeState.value){
                 "Shoes" -> DialogSelection(fieldValue = sizeState, text = "Item Size:", listOf("36","37","38","39","40","41","42","43","44","45","46"))
                 else -> DialogSelection(fieldValue = sizeState, text = "Item Size:", listOf("XXS","XS","S","M","L","XL","XXL"))
             }
 
-            DialogSelection(fieldValue = materialState, text = "Item Material:", listOf("Leather","Cotton","Silk","Linen","Nylon","Wool","Polyester"))
+            DialogSelection(fieldValue = ageState, text = "Item For:", listOf("Adults","Children"))
             DialogSelection(fieldValue = genderState, text = "Item Gender:", listOf("Male","Female","Unisex"))
 
             if (checkStates(listOf(nameState,typeState,colorState,ageState,sizeState,materialState,genderState))){

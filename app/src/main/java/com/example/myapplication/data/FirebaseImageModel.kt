@@ -1,5 +1,7 @@
 package com.example.myapplication.data
 
+import java.io.Serializable
+
 data class FirebaseImageModel(
     val name: String = "",
     var uri: String = "",
@@ -9,4 +11,4 @@ data class FirebaseImageModel(
     val size: String = "",
     val material: String = "",
     val gender: String = ""
-)
+): Serializable

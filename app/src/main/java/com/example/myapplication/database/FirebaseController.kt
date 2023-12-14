@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import com.example.myapplication.data.FirebaseClothingItem
 import com.example.myapplication.data.FirebaseImageModel
 import com.example.myapplication.data.Prediction
 import com.example.myapplication.data.User
@@ -105,13 +106,13 @@ class FirebaseController(
         return Uri.fromFile(tempFile)
     }
 
-    fun getImages(user: FirebaseUser): Flow<List<FirebaseImageModel>> = callbackFlow{
+    fun getImages(user: FirebaseUser): Flow<List<FirebaseClothingItem>> = callbackFlow{
         val userImagesReference = database.child("images").child(user.uid)
-        val imagesList = mutableListOf<FirebaseImageModel>()
+        val imagesList = mutableListOf<FirebaseClothingItem>()
 
         val listener = object : ValueEventListener {
             override fun onCancelled(p0: DatabaseError) {
-                Log.e("FirebaseChiuitStore", "getAll:", p0.toException())
+                Toast.makeText(currentContext, "Failed to retrieve data!", Toast.LENGTH_LONG).show()
             }
 
             override fun onDataChange(p0: DataSnapshot) {
@@ -121,7 +122,7 @@ class FirebaseController(
                     val firebaseImage = image.getValue(FirebaseImageModel::class.java)
 
                     if(firebaseImage != null) {
-                        imagesList.add(firebaseImage)
+                        imagesList.add(FirebaseClothingItem(image?.key.toString(), firebaseImage))
                     }
                 }
 

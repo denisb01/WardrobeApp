@@ -41,26 +41,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.myapplication.R
+import com.example.myapplication.data.FirebaseClothingItem
 import com.example.myapplication.data.FirebaseImageModel
 import com.example.myapplication.navigation.auth
 import com.example.myapplication.navigation.firebaseController
 import com.example.myapplication.presentation.app.AppActivity
+import com.example.myapplication.presentation.app.ClothesInfoActivity
 
-val imagesList = mutableStateOf(listOf<FirebaseImageModel>())
-var fullImagesList = listOf<FirebaseImageModel>()
+val imagesList = mutableStateOf(listOf<FirebaseClothingItem>())
+var fullImagesList = listOf<FirebaseClothingItem>()
 
 val clothesSearchCriteria = mutableStateOf("")
 
-fun displayImageCards(list: List<FirebaseImageModel>)
+fun displayImageCards(list: List<FirebaseClothingItem>)
 {
     imagesList.value = list
 }
@@ -71,10 +75,10 @@ fun displaySearchedImages()
         displayImageCards(fullImagesList)
     }
     else{
-        val searchValuesList = mutableListOf<FirebaseImageModel>()
+        val searchValuesList = mutableListOf<FirebaseClothingItem>()
 
         for (image in fullImagesList){
-            if(image.name.toLowerCase().contains(clothesSearchCriteria.value.toLowerCase())){
+            if(image.clothingItemData.name.toLowerCase().contains(clothesSearchCriteria.value.toLowerCase())){
                 searchValuesList.add(image)
             }
         }
@@ -166,7 +170,50 @@ fun SearchBar(context: Context, searchCriteria: MutableState<String>, speechRequ
     )
 }
 
-// TODO Modify Cards
+@Composable
+fun ClothingItemCard(context: Context, image: FirebaseClothingItem)
+{
+    Card(
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 15.dp
+        ),
+        modifier = Modifier
+            .width(150.dp)
+            .requiredWidth(150.dp)
+            .height(200.dp)
+            .requiredHeight(200.dp)
+            .padding(0.dp, 20.dp)
+            .clickable {
+                val intent = Intent(context, ClothesInfoActivity::class.java)
+                intent.putExtra("image_info", image)
+                context.startActivity(intent)
+            }
+    ){
+        Column(
+            horizontalAlignment =  Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+        ) {
+            AsyncImage(
+                model = image.clothingItemData.uri,
+                contentDescription = image.clothingItemData.name,
+                modifier = Modifier
+                    .fillMaxHeight(0.8f)
+                    .clip(
+                        RoundedCornerShape(10.dp)
+                    )
+            )
+            Text(
+                text = image.clothingItemData.name,
+                color = Color(context.getColor(R.color.primary_orange)),
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
 @Composable
 fun ClothesCardsDisplay(context: Context)
 {
@@ -174,40 +221,7 @@ fun ClothesCardsDisplay(context: Context)
         columns = GridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
         content = { items(imagesList.value){ image ->
-                Card(
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 15.dp
-                    ),
-                    modifier = Modifier
-                        .width(150.dp)
-                        .requiredWidth(150.dp)
-                        .height(200.dp)
-                        .requiredHeight(200.dp)
-                        .padding(0.dp, 20.dp)
-                        .clickable {
-                            Toast
-                                .makeText(
-                                    context,
-                                    image.name + " : " + image.type,
-                                    Toast.LENGTH_SHORT
-                                )
-                                .show()
-                        }
-                ){
-                    Column(
-                        horizontalAlignment =  Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        AsyncImage(
-                            model = image.uri,
-                            contentDescription = image.name,
-                            modifier = Modifier
-                                .fillMaxHeight(0.8f)
-                        )
-                        Text(text = image.name)
-                    }
-                }
+                ClothingItemCard(context = context, image = image)
             }
         }
     )
