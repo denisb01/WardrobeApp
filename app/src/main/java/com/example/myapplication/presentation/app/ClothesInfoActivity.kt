@@ -61,7 +61,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.myapplication.R
 import com.example.myapplication.data.FirebaseClothingItem
-import com.example.myapplication.data.FirebaseImageModel
+import com.example.myapplication.data.FirebaseClothingItemModel
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -73,14 +73,14 @@ import kotlin.concurrent.thread
 class ClothesInfoActivity: ComponentActivity() {
 
     private lateinit var clothingItem: FirebaseClothingItem
-    private lateinit var clothingItemData: FirebaseImageModel
+    private lateinit var clothingItemData: FirebaseClothingItemModel
     private val primaryOrangeColor = Color(0xffeb971c)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            if(intent.hasExtra("image_info")){
-                clothingItem = intent.getSerializableExtra("image_info") as FirebaseClothingItem
+            if(intent.hasExtra("item_info")){
+                clothingItem = intent.getSerializableExtra("item_info") as FirebaseClothingItem
                 clothingItemData = clothingItem.clothingItemData
             }
             else{

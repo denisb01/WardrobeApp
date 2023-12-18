@@ -6,8 +6,7 @@ import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import com.example.myapplication.data.FirebaseClothingItem
-import com.example.myapplication.data.FirebaseImageModel
-import com.example.myapplication.data.Prediction
+import com.example.myapplication.data.FirebaseClothingItemModel
 import com.example.myapplication.data.User
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseUser
@@ -59,7 +58,7 @@ class FirebaseController(
         }
     }
 
-    private fun addImageToDatabase(user: FirebaseUser?, imageName: String,image: FirebaseImageModel)
+    private fun addImageToDatabase(user: FirebaseUser?, imageName: String,image: FirebaseClothingItemModel)
     {
         if(user != null) {
             database.child("images").child(user.uid).child(imageName).setValue(image)
@@ -72,7 +71,7 @@ class FirebaseController(
         }
     }
 
-    fun addClothesImageToFirebase(user: FirebaseUser, imageData: FirebaseImageModel, image: Bitmap) {
+    fun addClothesImageToFirebase(user: FirebaseUser, imageData: FirebaseClothingItemModel, image: Bitmap) {
         if(user != null){
             val imageUri = getImageUri(image)
             val dateFormat = SimpleDateFormat("yyyy-MM-dd HH-mm-ss")
@@ -119,7 +118,7 @@ class FirebaseController(
                 val images = p0.children
 
                 for(image in images) {
-                    val firebaseImage = image.getValue(FirebaseImageModel::class.java)
+                    val firebaseImage = image.getValue(FirebaseClothingItemModel::class.java)
 
                     if(firebaseImage != null) {
                         imagesList.add(FirebaseClothingItem(image?.key.toString(), firebaseImage))

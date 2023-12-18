@@ -4,5 +4,5 @@ import java.io.Serializable
 
 data class FirebaseClothingItem(
     val key: String,
-    val clothingItemData: FirebaseImageModel
+    val clothingItemData: FirebaseClothingItemModel
 ) : Serializable

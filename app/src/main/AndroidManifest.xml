@@ -32,5 +32,9 @@
         </activity>
         <activity android:name=".presentation.app.ClothesInfoActivity">
         </activity>
+        <activity android:name=".presentation.app.CreateOutfitsActivity">
+        </activity>
+        <activity android:name=".presentation.app.ChooseClothesActivity">
+        </activity>
     </application>
 </manifest>

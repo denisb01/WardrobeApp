@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.speech.RecognizerIntent
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -41,19 +40,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.myapplication.R
 import com.example.myapplication.data.FirebaseClothingItem
-import com.example.myapplication.data.FirebaseImageModel
 import com.example.myapplication.navigation.auth
 import com.example.myapplication.navigation.firebaseController
 import com.example.myapplication.presentation.app.AppActivity
@@ -185,7 +181,7 @@ fun ClothingItemCard(context: Context, image: FirebaseClothingItem)
             .padding(0.dp, 20.dp)
             .clickable {
                 val intent = Intent(context, ClothesInfoActivity::class.java)
-                intent.putExtra("image_info", image)
+                intent.putExtra("item_info", image)
                 context.startActivity(intent)
             }
     ){

@@ -2,7 +2,7 @@ package com.example.myapplication.data
 
 import java.io.Serializable
 
-data class FirebaseImageModel(
+data class FirebaseClothingItemModel(
     val name: String = "",
     var uri: String = "",
     val type: String = "",

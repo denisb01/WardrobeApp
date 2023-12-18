@@ -4,7 +4,6 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.provider.MediaStore
 import android.speech.RecognizerIntent
@@ -97,7 +96,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.MainActivity
 import com.example.myapplication.R
-import com.example.myapplication.data.FirebaseImageModel
+import com.example.myapplication.data.FirebaseClothingItemModel
 import com.example.myapplication.data.Prediction
 import com.example.myapplication.database.FirebaseController
 import com.example.myapplication.ml.Detect
@@ -435,7 +434,7 @@ class AppActivity: ComponentActivity() {
                     val firebaseController = FirebaseController(currentContext)
                     firebaseController.addClothesImageToFirebase(
                         auth.currentUser!!,
-                        FirebaseImageModel(
+                        FirebaseClothingItemModel(
                             name = nameState.value,
                             type = typeState.value,
                             color = colorState.value,
@@ -553,7 +552,6 @@ class AppActivity: ComponentActivity() {
             }
             else -> super.onActivityResult(requestCode, resultCode, data)
         }
-
     }
 
     private fun objectDetection(image: Bitmap): Prediction

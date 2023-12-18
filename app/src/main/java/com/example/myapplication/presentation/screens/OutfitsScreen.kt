@@ -1,6 +1,7 @@
 package com.example.myapplication.presentation.screens
 
 import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,8 +37,8 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.myapplication.R
 import com.example.myapplication.data.FirebaseClothingItem
-import com.example.myapplication.data.FirebaseImageModel
 import com.example.myapplication.presentation.app.AppActivity
+import com.example.myapplication.presentation.app.CreateOutfitsActivity
 
 val outfitsList = mutableStateOf(listOf<FirebaseClothingItem>())
 var fullOutfitsList = listOf<FirebaseClothingItem>()
@@ -73,22 +74,27 @@ fun OutfitsScreen(navController: NavController, context: Context)
 {
     Scaffold (
         containerColor = Color.Transparent,
-        floatingActionButton = {
-            FloatingActionButton(
-                containerColor = Color(context.getColor(R.color.primary_orange)),
-                onClick = {
-
-                }
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Add",
-                    tint = Color.White
-                )
-            }
-        }
+        floatingActionButton = { AddOutfitsButton(context = context) }
     ){ paddingValues ->
         Window(paddingValues, context)
+    }
+}
+
+@Composable
+fun AddOutfitsButton(context: Context)
+{
+    FloatingActionButton(
+        containerColor = Color(context.getColor(R.color.primary_orange)),
+        onClick = {
+            val intent = Intent(context, CreateOutfitsActivity::class.java)
+            context.startActivity(intent)
+        }
+    ) {
+        Icon(
+            Icons.Default.Add,
+            contentDescription = "Add",
+            tint = Color.White
+        )
     }
 }
 
