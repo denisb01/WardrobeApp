@@ -7,6 +7,8 @@ import android.util.Log
 import android.widget.Toast
 import com.example.myapplication.data.FirebaseClothingItem
 import com.example.myapplication.data.FirebaseClothingItemModel
+import com.example.myapplication.data.FirebaseOutfit
+import com.example.myapplication.data.FirebaseOutfitModel
 import com.example.myapplication.data.User
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseUser
@@ -58,15 +60,59 @@ class FirebaseController(
         }
     }
 
+    fun addOutfitToFirebase(user: FirebaseUser?, outfit: FirebaseOutfitModel)
+    {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH-mm-ss")
+
+        if(user != null) {
+            database.child("outfits").child(user.uid).child(dateFormat.format(Date())).setValue(outfit)
+                .addOnSuccessListener {
+                    Toast.makeText(currentContext, "Success!", Toast.LENGTH_LONG).show()
+                }
+                .addOnFailureListener{
+                    Toast.makeText(currentContext, "Error while saving to database!", Toast.LENGTH_LONG).show()
+                }
+        }
+    }
+
+    fun getOutfits(user: FirebaseUser): Flow<List<FirebaseOutfit>> = callbackFlow{
+        val userOutfitsReference = database.child("outfits").child(user.uid)
+        val outfitsList = mutableListOf<FirebaseOutfit>()
+
+        val listener = object : ValueEventListener {
+            override fun onCancelled(p0: DatabaseError) {
+                Toast.makeText(currentContext, "Failed to retrieve data!", Toast.LENGTH_LONG).show()
+            }
+
+            override fun onDataChange(p0: DataSnapshot) {
+                val outfits = p0.children
+
+                for(outfit in outfits) {
+                    val firebaseOutfit = outfit.getValue(FirebaseOutfitModel::class.java)
+
+                    if(firebaseOutfit != null) {
+                        outfitsList.add(FirebaseOutfit(outfit?.key.toString(), firebaseOutfit))
+                    }
+                }
+
+                trySend(outfitsList)
+            }
+
+        }
+        userOutfitsReference.addValueEventListener(listener)
+
+        awaitClose { userOutfitsReference.removeEventListener(listener) }
+    }
+
     private fun addImageToDatabase(user: FirebaseUser?, imageName: String,image: FirebaseClothingItemModel)
     {
         if(user != null) {
             database.child("images").child(user.uid).child(imageName).setValue(image)
                 .addOnSuccessListener {
-                    Log.i("URL", "Success")
+                    Toast.makeText(currentContext, "Success!", Toast.LENGTH_LONG).show()
                 }
                 .addOnFailureListener{
-                    Log.i("URL", "Failure")
+                    Toast.makeText(currentContext, "Error while saving to database!", Toast.LENGTH_LONG).show()
                 }
         }
     }
@@ -78,7 +124,6 @@ class FirebaseController(
             val uploadTask = storage.child("clothes/${user.uid}/${dateFormat.format(Date())}").putFile(imageUri)
 
             uploadTask.addOnSuccessListener {
-                Toast.makeText(currentContext, "Success", Toast.LENGTH_LONG).show()
                 it.storage.downloadUrl.addOnSuccessListener { uri ->
                     imageData.uri = uri.toString()
                     addImageToDatabase(user, dateFormat.format(Date()), imageData)

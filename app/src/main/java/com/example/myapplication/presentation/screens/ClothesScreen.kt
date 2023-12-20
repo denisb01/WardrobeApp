@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.speech.RecognizerIntent
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -95,7 +96,7 @@ fun ClothesScreen(navController: NavController, context: Context)
         val imagesListFlow = firebaseController.getImages(auth.currentUser!!)
         fullImagesList = imagesListFlow.collectAsState(emptyList()).value
 
-        displayImageCards(fullImagesList)
+        displaySearchedImages()
 
         SearchBar(context, clothesSearchCriteria, AppActivity.CLOTHES_SPEECH_REQUEST_CODE, ::displaySearchedImages)
 

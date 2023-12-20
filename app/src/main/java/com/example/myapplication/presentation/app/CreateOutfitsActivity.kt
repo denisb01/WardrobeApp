@@ -2,14 +2,19 @@ package com.example.myapplication.presentation.app
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,21 +22,29 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -42,7 +55,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -52,6 +68,10 @@ import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.example.myapplication.R
 import com.example.myapplication.data.FirebaseClothingItem
+import com.example.myapplication.data.FirebaseOutfitModel
+import com.example.myapplication.database.FirebaseController
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 
 class CreateOutfitsActivity: ComponentActivity() {
     companion object{
@@ -77,10 +97,6 @@ class CreateOutfitsActivity: ComponentActivity() {
     private val longItemSizes = Pair(160.dp, 300.dp)
     private val lowerBodyItemSizes = Pair(120.dp, 180.dp)
     private val feetItemSizes = Pair(120.dp, 120.dp)
-
-    // TODO Add outfit attributes like gender, occasion, weather/season
-    // TODO Add save to database buttons and logic
-    // TODO Add go back dialog if item added
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -299,20 +315,314 @@ class CreateOutfitsActivity: ComponentActivity() {
     }
 
     @Composable
-    fun AddFeaturesDialog(displayDialogState: MutableState<Boolean>)
+    fun DialogButton(onClickEvent : () -> Unit, text: String, icon: ImageVector, enabled: Boolean = true)
     {
-        Dialog(onDismissRequest = { displayDialogState.value = false }) {
+        Button(
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(getColor(R.color.primary_orange))
+            ),
+            onClick = onClickEvent,
+            modifier = Modifier
+                .width(120.dp),
+            contentPadding = PaddingValues(0.dp),
+            enabled = enabled
+        ) {
+            Icon(icon, "Icon")
+            Spacer(modifier = Modifier.fillMaxWidth(0.08f))
+            Text(
+                text = text,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+    }
+
+    @Composable
+    fun FeaturesDialogHeader()
+    {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.15f)
+        ) {
+            Text(
+                text = "Add Outfit Features",
+                color = Color(getColor(R.color.primary_orange)),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun FeaturesDialogField(fieldValue: MutableState<String>, readOnly: Boolean)
+    {
+        val interaction = remember { MutableInteractionSource() }
+        BasicTextField(
+            value = fieldValue.value,
+            onValueChange = {
+                fieldValue.value = it
+
+                if(fieldValue.value.isEmpty()){
+                    enableSaveButton.value = false
+                }
+            },
+            readOnly = readOnly,
+            enabled = !readOnly,
+            interactionSource = interaction,
+            decorationBox = {inner ->
+                TextFieldDefaults.TextFieldDecorationBox(
+                    value = fieldValue.value,
+                    innerTextField = inner,
+                    enabled = !readOnly,
+                    singleLine = true,
+                    visualTransformation = VisualTransformation.None,
+                    interactionSource = interaction,
+                    contentPadding = PaddingValues(8.dp, 0.dp),
+                    colors = TextFieldDefaults.textFieldColors(
+                        containerColor = Color(getColor(R.color.primary_orange)),
+                    )
+                )
+            },
+            singleLine = true,
+            textStyle = TextStyle(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            ),
+            modifier = Modifier
+                .width(150.dp)
+                .height(30.dp)
+        )
+    }
+
+    @Composable
+    fun FeaturesDialogInput(fieldValue: MutableState<String>, text: String, readOnly: Boolean = false)
+    {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .padding(10.dp, 0.dp)
+        ){
+            Text(
+                text = text,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(getColor(R.color.primary_orange))
+            )
+            FeaturesDialogField(fieldValue = fieldValue, readOnly = readOnly )
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun FeaturesSelectionBox(fieldValue: MutableState<String>, selectionItems: List<String>) {
+        val expanded = remember { mutableStateOf(false) }
+
+        Box {
+            ExposedDropdownMenuBox(
+                expanded = expanded.value,
+                onExpandedChange = {
+                    expanded.value = !expanded.value
+                }
+            ) {
+                val interaction = remember { MutableInteractionSource() }
+                BasicTextField(
+                    value = fieldValue.value,
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = false,
+                    interactionSource = interaction,
+                    decorationBox = {inner ->
+                        TextFieldDefaults.TextFieldDecorationBox(
+                            value = fieldValue.value,
+                            innerTextField = inner,
+                            enabled = false,
+                            singleLine = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded.value) },
+                            visualTransformation = VisualTransformation.None,
+                            interactionSource = interaction,
+                            contentPadding = PaddingValues(8.dp, 0.dp),
+                            colors = TextFieldDefaults.textFieldColors(
+                                containerColor = Color(getColor(R.color.primary_orange))
+                            )
+                        )
+                    },
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White,
+                    ),
+                    modifier = Modifier
+                        .width(150.dp)
+                        .height(30.dp)
+                        .menuAnchor(),
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded.value,
+                    onDismissRequest = { expanded.value = false },
+                    modifier = Modifier
+                        .height(100.dp)
+                        .verticalScroll(rememberScrollState())
+                        .background(Color.White)
+                ) {
+                    selectionItems.forEach { item ->
+                        DropdownMenuItem(
+                            text = { Text(text = item, color = Color(getColor(R.color.primary_orange))) },
+                            onClick = {
+                                fieldValue.value = item
+                                expanded.value = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun FeaturesDialogSelection(fieldValue: MutableState<String>, text: String, selectionItems: List<String>)
+    {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .padding(10.dp, 0.dp)
+        ){
+            Text(
+                text = text,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(getColor(R.color.primary_orange))
+            )
+            FeaturesSelectionBox(fieldValue, selectionItems)
+        }
+    }
+
+    private fun checkOutfitFeatures(outfit: FirebaseOutfitModel, saveButtonState: MutableState<Boolean>)
+    {
+        saveButtonState.value = outfit.name.isNotEmpty() &&
+                                outfit.season.isNotEmpty() &&
+                                outfit.occasion.isNotEmpty() &&
+                                outfit.age.isNotEmpty() &&
+                                outfit.gender.isNotEmpty()
+    }
+
+    @Composable
+    fun FeaturesDialogContent(outfit: FirebaseOutfitModel, saveButtonState: MutableState<Boolean>)
+    {
+        val outfitNameState = remember{ mutableStateOf(outfit.name) }
+        val outfitTypeState = remember{ mutableStateOf(outfit.type) }
+        val outfitSeasonState = remember{ mutableStateOf(outfit.season) }
+        val outfitOccasionState = remember{ mutableStateOf(outfit.occasion) }
+        val outfitAgeState = remember{ mutableStateOf(outfit.age) }
+        val outfitGenderState = remember{ mutableStateOf(outfit.gender) }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.8f)
+        ) {
+            FeaturesDialogInput(fieldValue = outfitNameState, text = "Outfit Name:")
+            FeaturesDialogInput(fieldValue = outfitTypeState, text = "Outfit Type:", readOnly = true)
+            FeaturesDialogSelection(fieldValue = outfitSeasonState, text = "Outfit Season:", selectionItems = OutfitSeason.values().map { it.season })
+            FeaturesDialogSelection(fieldValue = outfitOccasionState, text = "Outfit Occasion:", selectionItems = OutfitOccasions.values().map { it.occasion })
+            FeaturesDialogSelection(fieldValue = outfitAgeState, text = "Outfit For:", selectionItems = OutfitAge.values().map { it.age })
+            FeaturesDialogSelection(fieldValue = outfitGenderState, text = "Outfit Gender:", selectionItems = OutfitGender.values().map { it.gender })
+        }
+
+        outfit.name = outfitNameState.value
+        outfit.season = outfitSeasonState.value
+        outfit.occasion = outfitOccasionState.value
+        outfit.age = outfitAgeState.value
+        outfit.gender = outfitGenderState.value
+
+        checkOutfitFeatures(outfit, saveButtonState)
+    }
+
+    @Composable
+    fun FeaturesDialogFooter(displayDialogState: MutableState<Boolean>, outfit: FirebaseOutfitModel, saveButtonState: MutableState<Boolean>)
+    {
+        Row (
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier.fillMaxSize()
+        ){
+            DialogButton(
+                onClickEvent = {
+                    displayDialogState.value = false
+                },
+                text = "Cancel",
+                icon = Icons.Filled.Cancel
+            )
+
+            DialogButton(
+                onClickEvent = {
+                    val firebaseController = FirebaseController(baseContext)
+
+                    firebaseController.addOutfitToFirebase(Firebase.auth.currentUser, outfit)
+
+                    finish()
+                },
+                enabled = saveButtonState.value,
+                text = "Save",
+                icon = Icons.Filled.CheckCircle,
+            )
+        }
+    }
+
+    private fun assembleOutfit(): FirebaseOutfitModel
+    {
+        val outfit = FirebaseOutfitModel(
+            headItemID = if(headItem.value != null) headItem.value?.key else null,
+            feetItemID = feetItem.value?.key
+        )
+
+        if(longOutfitChosen) {
+            outfit.type = "Long"
+            outfit.longItemID = longItem.value?.key
+        }
+        else{
+            outfit.type = "Short"
+            outfit.upperBodyItemID = upperBodyItem.value?.key
+            outfit.lowerBodyItemID = lowerBodyItem.value?.key
+        }
+
+        return outfit
+    }
+
+    @Composable
+    fun FeaturesDialog(displayDialogState: MutableState<Boolean>)
+    {
+        val outfit = assembleOutfit()
+        val saveButtonState = remember{ mutableStateOf(false) }
+
+        Dialog(onDismissRequest = {  }) {
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = Color.White
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(500.dp)
+                    .height(450.dp)
                     .padding(8.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-
+                FeaturesDialogHeader()
+                FeaturesDialogContent(outfit, saveButtonState)
+                FeaturesDialogFooter(displayDialogState, outfit, saveButtonState)
             }
         }
     }
@@ -324,7 +634,7 @@ class CreateOutfitsActivity: ComponentActivity() {
         val color = Color(getColor(R.color.primary_orange))
         val disabledColor = Color(getColor(R.color.secondary_orange))
 
-        val displayAddFeaturesDialog = remember{ mutableStateOf(false) }
+        val displayFeaturesDialog = remember{ mutableStateOf(false) }
 
         CenterAlignedTopAppBar (
             navigationIcon = {
@@ -348,7 +658,7 @@ class CreateOutfitsActivity: ComponentActivity() {
 
             actions = {
                 IconButton(
-                    onClick = { displayAddFeaturesDialog.value = true },
+                    onClick = { displayFeaturesDialog.value = true },
                     enabled = enableSaveButton.value
                 ) {
                     Icon(
@@ -364,7 +674,7 @@ class CreateOutfitsActivity: ComponentActivity() {
             )
         )
 
-        if (displayAddFeaturesDialog.value) AddFeaturesDialog(displayAddFeaturesDialog)
+        if (displayFeaturesDialog.value) FeaturesDialog(displayFeaturesDialog)
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -433,5 +743,37 @@ class CreateOutfitsActivity: ComponentActivity() {
             if(feetItem.value == null) AddItemButton(CHOOSE_FEET_ITEM, feetItemSizes)
             else DisplayItem(feetItem, CHOOSE_FEET_ITEM, feetItemSizes)
         }
+    }
+
+    private enum class OutfitSeason(
+        val season: String
+    ){
+        SPRING("Spring"),
+        SUMMER("Summer"),
+        AUTUMN("Autumn"),
+        WINTER("Winter")
+    }
+
+    private enum class OutfitOccasions(
+        val occasion: String
+    ){
+        FORMAL("Formal"),
+        CASUAL("Casual"),
+        HOUSE("House"),
+        PROFESSIONAL("Professional")
+    }
+
+    private enum class OutfitAge(
+        val age: String
+    ){
+        ADULT("Adult"),
+        CHILD("Child")
+    }
+
+    private enum class OutfitGender(
+        val gender: String
+    ){
+        MALE("Male"),
+        FEMALE("Female")
     }
 }
