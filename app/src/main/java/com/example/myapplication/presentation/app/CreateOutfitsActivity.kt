@@ -2,7 +2,6 @@ package com.example.myapplication.presentation.app
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
@@ -67,8 +66,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.example.myapplication.R
-import com.example.myapplication.data.FirebaseClothingItem
-import com.example.myapplication.data.FirebaseOutfitModel
+import com.example.myapplication.data.firebase.FirebaseClothingItem
+import com.example.myapplication.data.firebase.FirebaseOutfitModel
 import com.example.myapplication.database.FirebaseController
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -745,7 +744,7 @@ class CreateOutfitsActivity: ComponentActivity() {
         }
     }
 
-    private enum class OutfitSeason(
+    enum class OutfitSeason(
         val season: String
     ){
         SPRING("Spring"),
@@ -763,7 +762,7 @@ class CreateOutfitsActivity: ComponentActivity() {
         PROFESSIONAL("Professional")
     }
 
-    private enum class OutfitAge(
+    enum class OutfitAge(
         val age: String
     ){
         ADULT("Adult"),

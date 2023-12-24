@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.myapplication.R
-import com.example.myapplication.data.FirebaseClothingItem
+import com.example.myapplication.data.firebase.FirebaseClothingItem
 import com.example.myapplication.presentation.screens.fullImagesList
 
 class ChooseClothesActivity: ComponentActivity() {

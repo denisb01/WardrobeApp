@@ -2,9 +2,9 @@ package com.example.myapplication.presentation.screens
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -37,21 +37,26 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.myapplication.R
-import com.example.myapplication.data.FirebaseClothingItemModel
-import com.example.myapplication.data.FirebaseOutfit
-import com.example.myapplication.data.FirebaseOutfitModel
+import com.example.myapplication.data.firebase.FirebaseClothingItem
+import com.example.myapplication.data.firebase.FirebaseClothingItemModel
+import com.example.myapplication.data.firebase.FirebaseOutfit
+import com.example.myapplication.data.firebase.FirebaseOutfitModel
+import com.example.myapplication.data.outfits.LongOutfit
+import com.example.myapplication.data.outfits.ShortOutfit
 import com.example.myapplication.navigation.auth
 import com.example.myapplication.navigation.firebaseController
 import com.example.myapplication.presentation.app.AppActivity
 import com.example.myapplication.presentation.app.CreateOutfitsActivity
+import com.example.myapplication.presentation.app.OutfitInfoActivity
 
 val outfitsList = mutableStateOf(listOf<FirebaseOutfit>())
 var fullOutfitsList = listOf<FirebaseOutfit>()
@@ -161,30 +166,33 @@ fun OutfitCard(context: Context, outfit: FirebaseOutfit)
             .requiredHeight(220.dp)
             .padding(0.dp, 20.dp)
             .clickable {
-                Toast
-                    .makeText(
-                        context,
-                        "",
-                        Toast.LENGTH_SHORT
-                    )
-                    .show()
+                val intent = Intent(context, OutfitInfoActivity::class.java)
+                intent.putExtra("outfit_info", outfit)
+                context.startActivity(intent)
             }
     ){
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color(context.getColor(R.color.secondary_orange)),
+                            Color.White
+                        )
+                    )
+                )
         ) {
             Column(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .padding(0.dp, 5.dp, 0.dp, 0.dp)
+                    .padding(0.dp, 5.dp, 0.dp, 5.dp)
                     .fillMaxWidth(0.5f)
                     .fillMaxHeight(0.85f)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Color(context.getColor(R.color.primary_orange)))
+                    .background(Color.White)
             ) {
                 if(outfit.outfitData.type == "Long") LongOutfitCardImages(outfit.outfitData, context)
                 else ShortOutfitCardImages(outfit.outfitData, context)
@@ -206,108 +214,67 @@ fun OutfitCard(context: Context, outfit: FirebaseOutfit)
     }
 }
 
-// TODO Add OnClick to start OutfitInfoActivity ( To Be Created)
-
-fun findClothingItemByID(id: String): FirebaseClothingItemModel? {
+fun findClothingItemByID(id: String): FirebaseClothingItem {
     for (clothing in fullImagesList){
-        if(clothing.key == id) return clothing.clothingItemData
+        if(clothing.key == id) return clothing
     }
 
-    return null
+    return FirebaseClothingItem("None", FirebaseClothingItemModel())
+}
+
+@Composable
+fun OutfitScreenItemImage(item: FirebaseClothingItem, sizes: Pair<Dp,Dp>)
+{
+    AsyncImage(
+        model = item.clothingItemData.uri,
+        contentDescription = item.clothingItemData.name,
+        modifier = Modifier
+            .width(sizes.first)
+            .height(sizes.second)
+            .clip(
+                RoundedCornerShape(10.dp)
+            )
+    )
+}
+
+fun retrieveShortClothingItems(outfit: FirebaseOutfitModel): ShortOutfit
+{
+    return ShortOutfit(
+        headItem = if(outfit.headItemID != null) findClothingItemByID(outfit.headItemID!!) else null,
+        upperBodyItem = findClothingItemByID(outfit.upperBodyItemID!!),
+        lowerBodyItem = findClothingItemByID(outfit.lowerBodyItemID!!),
+        feetItem = findClothingItemByID(outfit.feetItemID!!)
+    )
 }
 
 @Composable
 fun ShortOutfitCardImages(outfit: FirebaseOutfitModel, context: Context) {
-    val headItem = if(outfit.headItemID != null) findClothingItemByID(outfit.headItemID!!) else null
-    val upperBodyItem = findClothingItemByID(outfit.upperBodyItemID!!)
-    val lowerBodyItem = findClothingItemByID(outfit.lowerBodyItemID!!)
-    val feetItem = findClothingItemByID(outfit.feetItemID!!)
+    val shortOutfitItems = retrieveShortClothingItems(outfit)
 
-    if(headItem != null){
-        AsyncImage(
-            model = headItem.uri,
-            contentDescription = headItem.name,
-            modifier = Modifier
-                .width(30.dp)
-                .height(30.dp)
-                .clip(
-                    RoundedCornerShape(10.dp)
-                )
-        )
-    }
+    if(shortOutfitItems.headItem != null)
+        OutfitScreenItemImage(item = shortOutfitItems.headItem!!, sizes = Pair(30.dp,30.dp))
 
-    AsyncImage(
-        model = upperBodyItem?.uri,
-        contentDescription = upperBodyItem?.name,
-        modifier = Modifier
-            .width(30.dp)
-            .height(40.dp)
-            .clip(
-                RoundedCornerShape(10.dp)
-            )
-    )
+    OutfitScreenItemImage(item = shortOutfitItems.upperBodyItem, sizes = Pair(30.dp,40.dp))
+    OutfitScreenItemImage(item = shortOutfitItems.lowerBodyItem, sizes = Pair(30.dp,40.dp))
+    OutfitScreenItemImage(item = shortOutfitItems.feetItem, sizes = Pair(30.dp,30.dp))
+}
 
-    AsyncImage(
-        model = lowerBodyItem?.uri,
-        contentDescription = lowerBodyItem?.name,
-        modifier = Modifier
-            .width(30.dp)
-            .height(40.dp)
-            .clip(
-                RoundedCornerShape(10.dp)
-            )
-    )
-
-    AsyncImage(
-        model = feetItem?.uri,
-        contentDescription = feetItem?.name,
-        modifier = Modifier
-            .width(30.dp)
-            .height(30.dp)
-            .clip(
-                RoundedCornerShape(10.dp)
-            )
+fun retrieveLongClothingItems(outfit: FirebaseOutfitModel): LongOutfit
+{
+    return LongOutfit(
+        headItem = if(outfit.headItemID != null) findClothingItemByID(outfit.headItemID!!) else null,
+        longItem = findClothingItemByID(outfit.longItemID!!),
+        feetItem = findClothingItemByID(outfit.feetItemID!!)
     )
 }
 
 @Composable
 fun LongOutfitCardImages(outfit: FirebaseOutfitModel, context: Context) {
-    val headItem = if(outfit.headItemID != null) findClothingItemByID(outfit.headItemID!!) else null
-    val longItem = findClothingItemByID(outfit.longItemID!!)
-    val feetItem = findClothingItemByID(outfit.feetItemID!!)
+    val longOutfitItems = retrieveLongClothingItems(outfit)
 
-    if(headItem != null){
-        AsyncImage(
-            model = headItem.uri,
-            contentDescription = headItem.name,
-            modifier = Modifier
-                .width(30.dp)
-                .height(30.dp)
-                .clip(
-                    RoundedCornerShape(10.dp)
-                )
-        )
-    }
+    if(longOutfitItems.headItem != null)
+        OutfitScreenItemImage(item = longOutfitItems.headItem!!, sizes = Pair(30.dp,30.dp))
 
-    AsyncImage(
-        model = longItem?.uri,
-        contentDescription = longItem?.name,
-        modifier = Modifier
-            .width(30.dp)
-            .height(50.dp)
-            .clip(
-                RoundedCornerShape(10.dp)
-            )
-    )
-
-    AsyncImage(
-        model = feetItem?.uri,
-        contentDescription = feetItem?.name,
-        modifier = Modifier
-            .width(30.dp)
-            .height(30.dp)
-            .clip(
-                RoundedCornerShape(10.dp)
-            )
-    )
+    OutfitScreenItemImage(item = longOutfitItems.longItem, sizes = Pair(30.dp,50.dp))
+    OutfitScreenItemImage(item = longOutfitItems.feetItem, sizes = Pair(30.dp,30.dp))
 }

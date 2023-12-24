@@ -1,15 +1,18 @@
 package com.example.myapplication.presentation.app
 
 import android.content.Intent
-import android.graphics.BitmapFactory
-import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,19 +26,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.PagerDefaults
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.ChildCare
-import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Female
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Male
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Texture
+import androidx.compose.material.icons.filled.Man
+import androidx.compose.material.icons.filled.SevereCold
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -56,32 +67,40 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.myapplication.R
 import com.example.myapplication.data.firebase.FirebaseClothingItem
-import com.example.myapplication.data.firebase.FirebaseClothingItemModel
-import java.io.IOException
-import java.io.InputStream
-import java.net.HttpURLConnection
-import java.net.MalformedURLException
-import java.net.URL
-import kotlin.concurrent.thread
+import com.example.myapplication.data.firebase.FirebaseOutfit
+import com.example.myapplication.data.firebase.FirebaseOutfitModel
+import com.example.myapplication.data.outfits.LongOutfit
+import com.example.myapplication.data.outfits.Outfit
+import com.example.myapplication.data.outfits.ShortOutfit
+import com.example.myapplication.presentation.screens.findClothingItemByID
 
+class OutfitInfoActivity: ComponentActivity() {
 
-class ClothesInfoActivity: ComponentActivity() {
+    private lateinit var outfit: FirebaseOutfit
+    private lateinit var outfitData: FirebaseOutfitModel
 
-    private lateinit var clothingItem: FirebaseClothingItem
-    private lateinit var clothingItemData: FirebaseClothingItemModel
     private val primaryOrangeColor = Color(0xffeb971c)
+
+    private lateinit var outfitItems: Outfit
+
+    private var isLongOutfit = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            if(intent.hasExtra("item_info")){
-                clothingItem = intent.getSerializableExtra("item_info") as FirebaseClothingItem
-                clothingItemData = clothingItem.clothingItemData
+            if(intent.hasExtra("outfit_info")){
+                outfit = intent.getSerializableExtra("outfit_info") as FirebaseOutfit
+                outfitData = outfit.outfitData
+
+                isLongOutfit = outfit.outfitData.type == "Long"
+
+                outfitItems = retrieveClothingItems()
             }
             else{
                 Toast.makeText(this, "Error loading clothes info!", Toast.LENGTH_LONG).show()
@@ -90,6 +109,22 @@ class ClothesInfoActivity: ComponentActivity() {
 
             Screen()
         }
+    }
+
+    private fun retrieveClothingItems(): Outfit {
+        return if (isLongOutfit)
+            LongOutfit(
+                headItem = if (outfitData.headItemID != null) findClothingItemByID(outfitData.headItemID!!) else null,
+                longItem = findClothingItemByID(outfitData.longItemID!!),
+                feetItem = findClothingItemByID(outfitData.feetItemID!!)
+            )
+        else
+            ShortOutfit(
+                headItem = if (outfitData.headItemID != null) findClothingItemByID(outfitData.headItemID!!) else null,
+                upperBodyItem = findClothingItemByID(outfitData.upperBodyItemID!!),
+                lowerBodyItem = findClothingItemByID(outfitData.lowerBodyItemID!!),
+                feetItem = findClothingItemByID(outfitData.feetItemID!!)
+            )
     }
 
     @Composable
@@ -115,6 +150,38 @@ class ClothesInfoActivity: ComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
+    fun TopBar()
+    {
+        val color = Color(getColor(R.color.primary_orange))
+
+        CenterAlignedTopAppBar (
+            navigationIcon = {
+                IconButton(onClick = { finish() }) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowBack,
+                        contentDescription = "Icon",
+                        tint = color
+                    )
+                }
+            },
+            title = {
+                Text(
+                    text = "Outfit Info",
+                    color = color,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 26.sp
+                )
+            },
+
+            colors = TopAppBarDefaults.smallTopAppBarColors(
+                containerColor = Color.Transparent
+            )
+
+        )
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
     fun Screen()
     {
         Background()
@@ -132,113 +199,82 @@ class ClothesInfoActivity: ComponentActivity() {
         }
     }
 
-    private fun shareImage()
-    {
-        thread(start = true)
-        {
-            var url: URL? = null
-            try { url = URL(clothingItemData.uri) }
-            catch (e: MalformedURLException) { e.printStackTrace() }
-
-            var connection: HttpURLConnection? = null
-            try { connection = url!!.openConnection() as HttpURLConnection }
-            catch (e: IOException) { e.printStackTrace() }
-
-            connection!!.doInput = true
-            try { connection.connect() }
-            catch (e: IOException) { e.printStackTrace() }
-
-            var input: InputStream? = null
-            try { input = connection.inputStream }
-            catch (e: IOException) { e.printStackTrace() }
-
-            val imgBitmap = BitmapFactory.decodeStream(input)
-            val imgBitmapPath = MediaStore.Images.Media.insertImage(
-                contentResolver, imgBitmap,
-                clothingItemData.name, null
-            )
-            val imgBitmapUri = Uri.parse(imgBitmapPath)
-
-            val shareIntent = Intent(Intent.ACTION_SEND)
-            shareIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            shareIntent.putExtra(Intent.EXTRA_STREAM, imgBitmapUri)
-            shareIntent.type = "image/png"
-            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            shareIntent.putExtra(Intent.EXTRA_TEXT, clothingItemData.name)
-
-            startActivity(Intent.createChooser(shareIntent, "Share Clothing Item"))
-        }
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun TopBar()
+    fun ClothingItemImage(clothingItem: FirebaseClothingItem,sizes: Pair<Dp, Dp>)
     {
-        val color = Color(getColor(R.color.primary_orange))
-
-        CenterAlignedTopAppBar (
-            navigationIcon = {
-                IconButton(onClick = { finish() }) {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowBack,
-                        contentDescription = "Icon",
-                        tint = color
-                    )
-                }
-            },
-            title = {
-                Text(
-                    text = "Clothing Item Info",
-                    color = color,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 26.sp
+        AsyncImage(
+            model = clothingItem.clothingItemData.uri,
+            contentDescription = clothingItem.clothingItemData.name,
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier
+                .width(sizes.first)
+                .height(sizes.second)
+                .clip(
+                    RoundedCornerShape(10.dp)
                 )
-            },
-
-            actions = {
-                IconButton(
-                    onClick = { shareImage() }
-                ){
-                    Icon(
-                        imageVector = Icons.Filled.Share,
-                        contentDescription = "Icon",
-                        tint = color
-                    )
+                .border(
+                    2.dp,
+                    Color(getColor(R.color.primary_orange)),
+                    RoundedCornerShape(10.dp)
+                )
+                .clickable {
+                    val intent = Intent(baseContext, ClothesInfoActivity::class.java)
+                    intent.putExtra("item_info", clothingItem)
+                    startActivity(intent)
                 }
-            },
-
-            colors = TopAppBarDefaults.smallTopAppBarColors(
-                containerColor = Color.Transparent
-            )
-
         )
     }
 
     @Composable
-    fun ImageCard()
+    fun DisplayLongOutfit(longOutfitItems: LongOutfit)
     {
+        if(longOutfitItems.headItem != null)
+            ClothingItemImage(clothingItem = longOutfitItems.headItem!!, sizes = Pair(60.dp,80.dp))
+
+        ClothingItemImage(clothingItem = longOutfitItems.longItem, sizes = Pair(120.dp,160.dp))
+        ClothingItemImage(clothingItem = longOutfitItems.feetItem, sizes = Pair(60.dp,80.dp))
+    }
+
+    @Composable
+    fun DisplayShortOutfit(shortOutfitItems: ShortOutfit)
+    {
+        if(shortOutfitItems.headItem != null)
+            ClothingItemImage(clothingItem = shortOutfitItems.headItem!!, sizes = Pair(60.dp,80.dp))
+
+        ClothingItemImage(clothingItem = shortOutfitItems.upperBodyItem, sizes = Pair(90.dp,120.dp))
+        ClothingItemImage(clothingItem = shortOutfitItems.lowerBodyItem, sizes = Pair(90.dp,120.dp))
+        ClothingItemImage(clothingItem = shortOutfitItems.feetItem, sizes = Pair(60.dp,80.dp))
+    }
+
+    @Composable
+    fun OutfitCard()
+    {
+
         Card(
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 20.dp
             ),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
             modifier = Modifier
                 .width(240.dp)
                 .requiredWidth(240.dp)
-                .height(320.dp)
-                .requiredHeight(320.dp)
+                .height(500.dp)
+                .requiredHeight(500.dp)
         ){
             Column(
                 horizontalAlignment =  Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxSize()
             ) {
-                AsyncImage(
-                    model = clothingItemData.uri,
-                    contentDescription = clothingItemData.name,
-                    contentScale = ContentScale.FillBounds,
-                    modifier = Modifier
-                        .fillMaxSize()
-                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if(isLongOutfit) DisplayLongOutfit(longOutfitItems = outfitItems as LongOutfit)
+                    else DisplayShortOutfit(shortOutfitItems = outfitItems as ShortOutfit)
+                }
             }
         }
     }
@@ -287,13 +323,13 @@ class ClothesInfoActivity: ComponentActivity() {
     }
 
     @Composable
-    fun FirstInfoColumn()
+    fun InfoColumns()
     {
         Column{
             IconInfoText(
                 imageVector = Icons.Filled.Category,
                 titleText = "Clothing Item Type",
-                subtitleText = clothingItemData.type
+                subtitleText = outfit.outfitData.type
             )
 
             Divider(
@@ -305,9 +341,9 @@ class ClothesInfoActivity: ComponentActivity() {
             )
 
             IconInfoText(
-                imageVector = Icons.Filled.ColorLens,
-                titleText = "Clothing Item Color",
-                subtitleText = clothingItemData.color
+                imageVector = if (outfit.outfitData.gender == "Male") Icons.Filled.Male else Icons.Filled.Female,
+                titleText = "Outfit Gender",
+                subtitleText = outfit.outfitData.gender
             )
 
             Divider(
@@ -319,21 +355,12 @@ class ClothesInfoActivity: ComponentActivity() {
             )
 
             IconInfoText(
-                imageVector = Icons.Filled.Texture,
-                titleText = "Clothing Material",
-                subtitleText = clothingItemData.material
-            )
-        }
-    }
-
-    @Composable
-    fun SecondInfoColumn()
-    {
-        Column{
-            IconInfoText(
-                imageVector = if (clothingItemData.gender == "Male") Icons.Filled.Male else Icons.Filled.Female,
-                titleText = "Clothing Item Gender",
-                subtitleText = clothingItemData.gender
+                imageVector = if(outfit.outfitData.season == CreateOutfitsActivity.OutfitSeason.SPRING.season ||
+                                 outfit.outfitData.season == CreateOutfitsActivity.OutfitSeason.SUMMER.season)
+                             Icons.Filled.Whatshot
+                        else Icons.Filled.SevereCold,
+                titleText = "Outfit For",
+                subtitleText = outfit.outfitData.season
             )
 
             Divider(
@@ -345,9 +372,9 @@ class ClothesInfoActivity: ComponentActivity() {
             )
 
             IconInfoText(
-                imageVector = Icons.Filled.FormatSize,
-                titleText = "Clothing Item Size",
-                subtitleText = clothingItemData.size
+                imageVector = Icons.Filled.Man,
+                titleText = "Outfit Occasion",
+                subtitleText = outfit.outfitData.occasion
             )
 
             Divider(
@@ -359,9 +386,9 @@ class ClothesInfoActivity: ComponentActivity() {
             )
 
             IconInfoText(
-                imageVector = if(clothingItemData.age == "Adults") Icons.Filled.Face else Icons.Filled.ChildCare,
-                titleText = "Clothing Item For",
-                subtitleText = clothingItemData.age
+                imageVector = if(outfit.outfitData.age == CreateOutfitsActivity.OutfitAge.ADULT.age) Icons.Filled.Face else Icons.Filled.ChildCare,
+                titleText = "Outfit For",
+                subtitleText = outfit.outfitData.age
             )
 
         }
@@ -373,8 +400,14 @@ class ClothesInfoActivity: ComponentActivity() {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .height(630f.dp)
                 .clip(
+                    RoundedCornerShape(50.dp, 50.dp, 0.dp, 0.dp)
+                )
+                .border(
+                    2.dp,
+                    Color.White,
                     RoundedCornerShape(50.dp, 50.dp, 0.dp, 0.dp)
                 )
                 .background(Color.White)
@@ -383,44 +416,56 @@ class ClothesInfoActivity: ComponentActivity() {
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .padding(0.dp, 10.dp)
-                    .width(240.dp)
+                    .fillMaxWidth()
                     .fillMaxHeight(0.125f)
-                    .clip(RoundedCornerShape(15.dp))
-                    .background(primaryOrangeColor)
-            ){
-                Text(
-                    text = clothingItemData.name,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 26.sp
-                )
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color(getColor(R.color.secondary_orange)),
+                                Color.White,
+                            )
+                        )
+                    )
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .padding(0.dp, 10.dp)
+                        .width(240.dp)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(primaryOrangeColor)
+                ) {
+                    Text(
+                        text = outfit.outfitData.name,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 26.sp
+                    )
+                }
             }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(30.dp),
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(0.8f)
-                    .horizontalScroll(rememberScrollState())
-            ){
-                FirstInfoColumn()
-                SecondInfoColumn()
-            }
+            InfoColumns()
         }
     }
 
     @Composable
     fun MainScaffoldContent(paddingValues: PaddingValues)
     {
-        Column(
+        LazyColumn(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        ) {
-            ImageCard()
-            InfoCard()
+        ){
+            item {
+                OutfitCard()
+            }
+            item {
+                InfoCard()
+            }
         }
     }
+    
 }

@@ -36,5 +36,7 @@
         </activity>
         <activity android:name=".presentation.app.ChooseClothesActivity">
         </activity>
+        <activity android:name=".presentation.app.OutfitInfoActivity">
+        </activity>
     </application>
 </manifest>

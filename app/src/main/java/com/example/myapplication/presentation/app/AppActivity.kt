@@ -96,8 +96,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.MainActivity
 import com.example.myapplication.R
-import com.example.myapplication.data.FirebaseClothingItemModel
-import com.example.myapplication.data.Prediction
+import com.example.myapplication.data.firebase.FirebaseClothingItemModel
+import com.example.myapplication.data.other.Prediction
 import com.example.myapplication.database.FirebaseController
 import com.example.myapplication.ml.Detect
 import com.example.myapplication.navigation.Navigation

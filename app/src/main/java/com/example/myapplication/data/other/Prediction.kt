@@ -1,4 +1,4 @@
-package com.example.myapplication.data
+package com.example.myapplication.data.other
 
 import android.graphics.Bitmap
 

@@ -4,13 +4,13 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.speech.RecognizerIntent
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,16 +41,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.myapplication.R
-import com.example.myapplication.data.FirebaseClothingItem
+import com.example.myapplication.data.firebase.FirebaseClothingItem
 import com.example.myapplication.navigation.auth
 import com.example.myapplication.navigation.firebaseController
 import com.example.myapplication.presentation.app.AppActivity
@@ -187,26 +189,43 @@ fun ClothingItemCard(context: Context, image: FirebaseClothingItem)
             }
     ){
         Column(
-            horizontalAlignment =  Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color(context.getColor(R.color.secondary_orange)),
+                            Color.White
+                        )
+                    )
+                )
         ) {
             AsyncImage(
                 model = image.clothingItemData.uri,
                 contentDescription = image.clothingItemData.name,
                 modifier = Modifier
+                    .padding(0.dp, 5.dp, 0.dp, 5.dp)
                     .fillMaxHeight(0.8f)
                     .clip(
                         RoundedCornerShape(10.dp)
                     )
             )
-            Text(
-                text = image.clothingItemData.name,
-                color = Color(context.getColor(R.color.primary_orange)),
-                fontWeight = FontWeight.Bold,
-            )
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.7f)
+                    .background(Color.White)
+            ) {
+                Text(
+                    text = image.clothingItemData.name,
+                    color = Color(context.getColor(R.color.primary_orange)),
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
