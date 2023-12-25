@@ -28,7 +28,21 @@
         </activity>
         <activity android:name=".presentation.sign_up.SignUpActivity">
         </activity>
-        <activity android:name=".presentation.app.AppActivity">
+        <activity
+            android:name=".presentation.app.AppActivity"
+            android:exported="true"
+            >
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO" />
+                <data android:scheme="mailto" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <data android:scheme="https" android:host="www.upt.ro" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+            </intent-filter>
         </activity>
         <activity android:name=".presentation.app.ClothesInfoActivity">
         </activity>

@@ -42,8 +42,8 @@ import androidx.compose.material.icons.filled.HelpCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Man
 import androidx.compose.material.icons.filled.ManageAccounts
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.AccountBox
 import androidx.compose.material.icons.rounded.Camera
 import androidx.compose.material3.BottomAppBar
@@ -126,7 +126,7 @@ class AppActivity: ComponentActivity() {
 
     private var clothesButtonState = mutableStateOf(false)
     private var outfitsButtonState = mutableStateOf(true)
-    private var settingsButtonState = mutableStateOf(true)
+    private var contactUsButtonState = mutableStateOf(true)
     private var helpButtonState = mutableStateOf(true)
 
     private val auth: FirebaseAuth = Firebase.auth
@@ -659,16 +659,15 @@ class AppActivity: ComponentActivity() {
                     CameraButton()
                     BottomMenuButton(
                         navigationRoute = {
-//                            displayDialog.value = true
-//                            displayData = Prediction("Shoes",0.5f,BitmapFactory.decodeResource(currentContext.resources,R.drawable.image))
+                            navController.navigate(Screen.ContactUsScreen.route)
                         },
-                        buttonText = "Settings",
-                        buttonIcon = Icons.Filled.Settings,
-                        settingsButtonState
+                        buttonText = "Contact",
+                        buttonIcon = Icons.Filled.Phone,
+                        contactUsButtonState
                     )
                     BottomMenuButton(
                         navigationRoute = {
-
+                            navController.navigate(Screen.HelpScreen.route)
                         },
                         buttonText = "Help",
                         buttonIcon = Icons.Filled.Help,
@@ -986,7 +985,7 @@ class AppActivity: ComponentActivity() {
                 gesturesEnabled = true
             ) {
                 val statesList = listOf(
-                    clothesButtonState,outfitsButtonState,settingsButtonState,helpButtonState
+                    clothesButtonState,outfitsButtonState,contactUsButtonState,helpButtonState
                 )
 
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
