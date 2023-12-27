@@ -52,5 +52,7 @@
         </activity>
         <activity android:name=".presentation.app.OutfitInfoActivity">
         </activity>
+        <activity android:name=".presentation.app.AccountSettingsActivity">
+        </activity>
     </application>
 </manifest>

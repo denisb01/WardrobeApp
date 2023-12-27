@@ -247,5 +247,35 @@ fun HelpContentSection(context: Context)
                 )
             }
         }
+
+        item {
+            HelpSubtitle(context = context, startState = false, text = "Account Drawer"){
+                HelpSubtitleContent(
+                    context = context,
+                    text = "This app provides user with the ability to check and modify your account information.\n" +
+                            "1. To see currently logged in account, change account info or log out of your account, firstly " +
+                            "you need to open account drawer by swiping from left side of the screen to the right side while " +
+                            "on main app screen, or click the account button located in top right corner.\n" +
+                            "2. After you have opened the account drawer, you can see the account you are currently logged in with.\n" +
+                            "3. To change your account User Name or password click on Account Settings button.\n" +
+                            "4. To log out of your account press on Log Out button located on the bottom of the account drawer."
+                )
+            }
+        }
+
+        item {
+            HelpSubtitle(context = context, startState = false, text = "Account Settings"){
+                HelpSubtitleContent(
+                    context = context,
+                    text = "To modify your User Name or password, open Account Settings from Account Drawer (see Account Drawer section).\n" +
+                            "1. After opening Account Settings screen, you will see three fields. One field for " +
+                            "changing User Name containing your current User Name, and two password fields for new password " +
+                            "and confirmation of the new password.\n" +
+                            "2. To unlock the Save button, you need to modify your User Name with a User Name that is not same as your " +
+                            "current one, or change your password to a new 6 character password and confirm it.\n" +
+                            "3. To save your new credentials click on the Save button."
+                )
+            }
+        }
     }
 }

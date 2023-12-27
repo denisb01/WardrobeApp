@@ -156,14 +156,20 @@ class AppActivity: ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            if (displayDialog.value){
-                ImageInfoEditDialog()
+            if (Firebase.auth.currentUser != null) {
+
+                if (displayDialog.value) {
+                    ImageInfoEditDialog()
+                }
+
+                currentContext = LocalContext.current
+                navController = rememberNavController()
+
+                AppScreen()
             }
-
-            currentContext = LocalContext.current
-            navController = rememberNavController()
-
-            AppScreen()
+            else{
+                finish()
+            }
         }
     }
 
@@ -581,8 +587,6 @@ class AppActivity: ComponentActivity() {
 
         val labels = FileUtil.loadLabels(currentContext, "labels.txt")
 
-//        Toast.makeText(currentContext, labels[feature3[0].toInt()] + " : " + (feature0[0]*100).toString(), Toast.LENGTH_SHORT).show()
-
         val prediction = Prediction(labels[feature3[0].toInt()], feature0[0]*100, image)
 
         model.close()
@@ -819,7 +823,7 @@ class AppActivity: ComponentActivity() {
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = auth.currentUser?.displayName.toString(),
+                        text = Firebase.auth.currentUser?.displayName.toString(),
                         color = Color(color),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
@@ -895,15 +899,8 @@ class AppActivity: ComponentActivity() {
                     buttonIcon = Icons.Filled.ManageAccounts,
                     buttonText = "Account Settings",
                     buttonAction = {
-
-                    }
-                )
-
-                DrawerButton(
-                    buttonIcon = Icons.Filled.HelpCenter,
-                    buttonText = "Account Help",
-                    buttonAction = {
-
+                        val intent = Intent(baseContext, AccountSettingsActivity::class.java)
+                        startActivity(intent)
                     }
                 )
 
