@@ -54,5 +54,7 @@
         </activity>
         <activity android:name=".presentation.app.AccountSettingsActivity">
         </activity>
+        <activity android:name=".presentation.app.OutfitGenerationActivity">
+        </activity>
     </application>
 </manifest>

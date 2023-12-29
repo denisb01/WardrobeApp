@@ -26,10 +26,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -39,6 +39,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -63,33 +64,21 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.example.myapplication.R
 import com.example.myapplication.data.firebase.FirebaseClothingItem
 import com.example.myapplication.data.firebase.FirebaseOutfitModel
+import com.example.myapplication.data.outfits.LongOutfit
+import com.example.myapplication.data.outfits.Outfit
+import com.example.myapplication.data.outfits.ShortOutfit
 import com.example.myapplication.database.FirebaseController
+import com.example.myapplication.presentation.screens.fullImagesList
+import com.example.myapplication.presentation.screens.fullOutfitsList
+import com.example.myapplication.suggestion.ContentBasedFiltering
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
-class CreateOutfitsActivity: ComponentActivity() {
-    companion object{
-        val CHOOSE_HEAD_ITEM = 200
-        val CHOOSE_UPPER_BODY_ITEM = 201
-        val CHOOSE_LONG_ITEM = 202
-        val CHOOSE_LOWER_BODY_ITEM = 203
-        val CHOOSE_FEET_ITEM = 204
-    }
-
-    private val enableSaveButton = mutableStateOf(false)
-
-    private var longOutfitChosen = false
-
-    private val headItem: MutableState<FirebaseClothingItem?> = mutableStateOf(null)
-    private val upperBodyItem: MutableState<FirebaseClothingItem?> = mutableStateOf(null)
-    private val longItem: MutableState<FirebaseClothingItem?> = mutableStateOf(null)
-    private val lowerBodyItem: MutableState<FirebaseClothingItem?> = mutableStateOf(null)
-    private val feetItem: MutableState<FirebaseClothingItem?> = mutableStateOf(null)
+class OutfitGenerationActivity: ComponentActivity() {
 
     private val headItemSizes = Pair(100.dp, 100.dp)
     private val upperBodyItemSizes = Pair(120.dp, 180.dp)
@@ -97,219 +86,19 @@ class CreateOutfitsActivity: ComponentActivity() {
     private val lowerBodyItemSizes = Pair(120.dp, 180.dp)
     private val feetItemSizes = Pair(120.dp, 120.dp)
 
+    private val enableGenerateButton = mutableStateOf(false)
+    private val outfit = FirebaseOutfitModel()
+    private var outfitItems: MutableState<Outfit?> = mutableStateOf(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val showDialog = remember {mutableStateOf(true)}
+            val showDialog = remember { mutableStateOf(true) }
 
             Background()
 
-            if (showDialog.value) ChooseOutfitTypeDialog(showDialog)
+            if (showDialog.value) ChooseOutfitFeaturesDialog(showDialog)
             else Screen()
-        }
-    }
-
-    @Composable
-    fun DialogTitle()
-    {
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.2f)
-        ) {
-            Text(
-                text = "Outfit Type",
-                color = Color(getColor(R.color.primary_orange)),
-                fontSize = 28.sp,
-                fontWeight =  FontWeight.Bold
-            )
-        }
-    }
-
-    @Composable
-    fun DialogContent()
-    {
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.5f)
-        ) {
-            Text(
-                text = "For one-piece outfit like a Dress, select Long.\n\n" +
-                        "For two-piece outfit like Pants and Top, select Short.",
-                color = Color(getColor(R.color.primary_orange)),
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 18.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-            )
-        }
-    }
-
-    @Composable
-    fun TypeButton(text: String, action: () -> Unit)
-    {
-        Button(
-            onClick = action,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(getColor(R.color.primary_orange))
-            ),
-            modifier = Modifier
-                .fillMaxWidth(0.7f)
-        ) {
-            Text(
-                text = text,
-                fontSize = 18.sp,
-                color = Color.White
-            )
-        }
-    }
-
-    @Composable
-    fun DialogButtons(showDialog: MutableState<Boolean>)
-    {
-        Column(
-            verticalArrangement = Arrangement.SpaceEvenly,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight()
-        ) {
-            TypeButton(
-                text = "Long",
-                action = {
-                    showDialog.value = false
-                    longOutfitChosen = true
-                }
-            )
-
-            TypeButton(
-                text = "Short",
-                action = {
-                    showDialog.value = false
-                    longOutfitChosen = false
-                }
-            )
-        }
-    }
-
-    @Composable
-    fun ChooseOutfitTypeDialog(showDialog: MutableState<Boolean>)
-    {
-        Dialog(
-            onDismissRequest = {
-                finish()
-            },
-            properties = DialogProperties(
-                dismissOnClickOutside = false
-            )
-        ) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                ),
-                modifier = Modifier
-                    .width(350.dp)
-                    .height(320.dp)
-            ){
-                DialogTitle()
-                DialogContent()
-                DialogButtons(showDialog)
-            }
-        }
-    }
-
-    private fun checkIfValidOutfit()
-    {
-        if (longOutfitChosen)
-            enableSaveButton.value = feetItem.value != null && longItem.value != null
-        else
-            enableSaveButton.value = feetItem.value != null && lowerBodyItem.value != null && upperBodyItem.value != null
-    }
-
-    private fun handleChosenItem(itemState: MutableState<FirebaseClothingItem?>, data: Intent?) {
-        val chosenItem: FirebaseClothingItem?
-        val extra = data?.extras?.get("item")
-
-        chosenItem =
-            if (extra != null)
-                extra as FirebaseClothingItem
-            else
-                null
-
-        itemState.value = chosenItem
-
-        checkIfValidOutfit()
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        when (requestCode) {
-            CHOOSE_HEAD_ITEM -> if (resultCode == RESULT_OK) { handleChosenItem(headItem ,data) }
-            CHOOSE_UPPER_BODY_ITEM -> if (resultCode == RESULT_OK) { handleChosenItem(upperBodyItem ,data) }
-            CHOOSE_LONG_ITEM -> if (resultCode == RESULT_OK) { handleChosenItem(longItem ,data) }
-            CHOOSE_LOWER_BODY_ITEM -> if (resultCode == RESULT_OK) { handleChosenItem(lowerBodyItem ,data) }
-            CHOOSE_FEET_ITEM -> if (resultCode == RESULT_OK) { handleChosenItem(feetItem ,data) }
-        }
-    }
-
-    private fun chooseItem(requestCode: Int)
-    {
-        val composeIntent = Intent(this, ChooseClothesActivity::class.java)
-        composeIntent.putExtra("request_code", requestCode)
-        startActivityForResult(composeIntent, requestCode)
-    }
-
-    @Composable
-    fun DisplayItem(itemState: MutableState<FirebaseClothingItem?>, requestCode: Int, sizes: Pair<Dp, Dp>) {
-        AsyncImage(
-            model = itemState.value?.clothingItemData?.uri,
-            contentDescription = itemState.value?.clothingItemData?.name,
-            modifier = Modifier
-                .width(sizes.first)
-                .height(sizes.second)
-                .clickable { chooseItem(requestCode) }
-        )
-    }
-
-    @Composable
-    fun AddItemButton(requestCode: Int, sizes: Pair<Dp, Dp>)
-    {
-        Icon(
-            imageVector = Icons.Filled.Add,
-            contentDescription = "Icon",
-            tint = Color(getColor(R.color.primary_orange)),
-            modifier = Modifier
-                .width(sizes.first)
-                .height(sizes.second)
-                .background(Color.LightGray)
-                .clickable { chooseItem(requestCode) }
-        )
-    }
-
-    @Composable
-    fun Background() {
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            translate(left = 0f, top = 600f) {
-                drawCircle(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            Color(getColor(R.color.primary_orange)),
-                            Color(getColor(R.color.secondary_orange)),
-                        )
-                    ),
-                    radius = 360.dp.toPx()
-                )
-            }
         }
     }
 
@@ -347,7 +136,7 @@ class CreateOutfitsActivity: ComponentActivity() {
                 .fillMaxHeight(0.15f)
         ) {
             Text(
-                text = "Add Outfit Features",
+                text = "Select Outfit Features",
                 color = Color(getColor(R.color.primary_orange)),
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
@@ -364,10 +153,6 @@ class CreateOutfitsActivity: ComponentActivity() {
             value = fieldValue.value,
             onValueChange = {
                 fieldValue.value = it
-
-                if(fieldValue.value.isEmpty()){
-                    enableSaveButton.value = false
-                }
             },
             readOnly = readOnly,
             enabled = !readOnly,
@@ -510,15 +295,217 @@ class CreateOutfitsActivity: ComponentActivity() {
 
     private fun checkOutfitFeatures(outfit: FirebaseOutfitModel, saveButtonState: MutableState<Boolean>)
     {
-        saveButtonState.value = outfit.name.isNotEmpty() &&
-                                outfit.season.isNotEmpty() &&
-                                outfit.occasion.isNotEmpty() &&
-                                outfit.age.isNotEmpty() &&
-                                outfit.gender.isNotEmpty()
+        saveButtonState.value = outfit.type.isNotEmpty() &&
+                outfit.season.isNotEmpty() &&
+                outfit.occasion.isNotEmpty() &&
+                outfit.age.isNotEmpty() &&
+                outfit.gender.isNotEmpty()
     }
 
     @Composable
-    fun FeaturesDialogContent(outfit: FirebaseOutfitModel, saveButtonState: MutableState<Boolean>)
+    fun FeaturesDialogContent(generateButtonState: MutableState<Boolean>)
+    {
+        val outfitHasHatState = remember{ mutableStateOf(if (outfit.headItemID != null) "Yes" else "No" ) }
+        val outfitTypeState = remember{ mutableStateOf(outfit.type) }
+        val outfitSeasonState = remember{ mutableStateOf(outfit.season) }
+        val outfitOccasionState = remember{ mutableStateOf(outfit.occasion) }
+        val outfitAgeState = remember{ mutableStateOf(outfit.age) }
+        val outfitGenderState = remember{ mutableStateOf(outfit.gender) }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.8f)
+        ) {
+            FeaturesDialogSelection(fieldValue = outfitHasHatState, text = "With hat?", selectionItems = listOf("Yes", "No"))
+            FeaturesDialogSelection(fieldValue = outfitTypeState, text = "Outfit Type:", selectionItems = OutfitType.values().map { it.type })
+            FeaturesDialogSelection(fieldValue = outfitSeasonState, text = "Outfit Season:", selectionItems = CreateOutfitsActivity.OutfitSeason.values().map { it.season })
+            FeaturesDialogSelection(fieldValue = outfitOccasionState, text = "Outfit Occasion:", selectionItems = CreateOutfitsActivity.OutfitOccasions.values().map { it.occasion })
+            FeaturesDialogSelection(fieldValue = outfitAgeState, text = "Outfit For:", selectionItems = CreateOutfitsActivity.OutfitAge.values().map { it.age })
+            FeaturesDialogSelection(fieldValue = outfitGenderState, text = "Outfit Gender:", selectionItems = CreateOutfitsActivity.OutfitGender.values().map { it.gender })
+        }
+        outfit.headItemID = if (outfitHasHatState.value == "Yes") "" else null
+        outfit.type = outfitTypeState.value
+        outfit.season = outfitSeasonState.value
+        outfit.occasion = outfitOccasionState.value
+        outfit.age = outfitAgeState.value
+        outfit.gender = outfitGenderState.value
+
+        checkOutfitFeatures(outfit, generateButtonState)
+    }
+
+    private fun generateLongOutfit()
+    {
+        val generateOutfits = ContentBasedFiltering()
+        val longOutfit = generateOutfits.generateLongOutfit(fullImagesList, fullOutfitsList, outfit)
+
+        outfitItems.value = longOutfit
+
+        outfit.headItemID = if (longOutfit.headItem != null) longOutfit.headItem!!.key else null
+        outfit.longItemID = longOutfit.longItem.key
+        outfit.feetItemID = longOutfit.feetItem.key
+    }
+
+    private fun generateShortOutfit()
+    {
+        val generateOutfits = ContentBasedFiltering()
+        val shortOutfit = generateOutfits.generateShortOutfit(fullImagesList, fullOutfitsList, outfit)
+
+        outfitItems.value = shortOutfit
+
+        outfit.headItemID = if (shortOutfit.headItem != null) shortOutfit.headItem!!.key else null
+        outfit.upperBodyItemID = shortOutfit.upperBodyItem.key
+        outfit.lowerBodyItemID = shortOutfit.lowerBodyItem.key
+        outfit.feetItemID = shortOutfit.feetItem.key
+    }
+
+    @Composable
+    fun FeaturesDialogFooter(displayDialogState: MutableState<Boolean>, generateButtonState: MutableState<Boolean>)
+    {
+        Row (
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier.fillMaxSize()
+        ){
+            DialogButton(
+                onClickEvent = {
+                    displayDialogState.value = false
+                },
+                text = "Cancel",
+                icon = Icons.Filled.Cancel
+            )
+
+            DialogButton(
+                onClickEvent = {
+                    if (outfit.type == OutfitType.LONG.type)
+                        generateLongOutfit()
+                    else
+                        generateShortOutfit()
+
+                    displayDialogState.value = false
+                },
+                enabled = generateButtonState.value,
+                text = "Generate",
+                icon = Icons.Filled.CheckCircle,
+            )
+        }
+    }
+
+    @Composable
+    fun ChooseOutfitFeaturesDialog(displayDialogState: MutableState<Boolean>)
+    {
+        Dialog(onDismissRequest = {  }) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(450.dp)
+                    .padding(8.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                FeaturesDialogHeader()
+                FeaturesDialogContent(enableGenerateButton)
+                FeaturesDialogFooter(displayDialogState, enableGenerateButton)
+            }
+        }
+    }
+
+    @Composable
+    fun Background() {
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            translate(left = 0f, top = 600f) {
+                drawCircle(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            Color(getColor(R.color.primary_orange)),
+                            Color(getColor(R.color.secondary_orange)),
+                        )
+                    ),
+                    radius = 360.dp.toPx()
+                )
+            }
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun TopBar()
+    {
+        val color = Color(getColor(R.color.primary_orange))
+
+        val showSaveDialog = remember { mutableStateOf(false) }
+
+        CenterAlignedTopAppBar (
+            navigationIcon = {
+                IconButton(onClick = { finish() }) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowBack,
+                        contentDescription = "Icon",
+                        tint = color
+                    )
+                }
+            },
+
+            title = {
+                Text(
+                    text = "Generate Outfit",
+                    color = color,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 26.sp
+                )
+            },
+
+            actions = {
+                IconButton(
+                    onClick = {
+                        showSaveDialog.value = true
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.CheckCircle,
+                        contentDescription = "Icon",
+                        tint = color
+                    )
+                }
+            },
+
+            colors = TopAppBarDefaults.smallTopAppBarColors(
+                containerColor = Color.Transparent
+            )
+        )
+
+        if (showSaveDialog.value) SaveDialog(showSaveDialog = showSaveDialog)
+
+    }
+
+    @Composable
+    fun SaveDialogHeader()
+    {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.15f)
+        ) {
+            Text(
+                text = "Save Outfit",
+                color = Color(getColor(R.color.primary_orange)),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+
+    @Composable
+    fun SaveDialogContent(saveButtonState: MutableState<Boolean>)
     {
         val outfitNameState = remember{ mutableStateOf(outfit.name) }
         val outfitTypeState = remember{ mutableStateOf(outfit.type) }
@@ -536,23 +523,19 @@ class CreateOutfitsActivity: ComponentActivity() {
         ) {
             FeaturesDialogInput(fieldValue = outfitNameState, text = "Outfit Name:")
             FeaturesDialogInput(fieldValue = outfitTypeState, text = "Outfit Type:", readOnly = true)
-            FeaturesDialogSelection(fieldValue = outfitSeasonState, text = "Outfit Season:", selectionItems = OutfitSeason.values().map { it.season })
-            FeaturesDialogSelection(fieldValue = outfitOccasionState, text = "Outfit Occasion:", selectionItems = OutfitOccasions.values().map { it.occasion })
-            FeaturesDialogSelection(fieldValue = outfitAgeState, text = "Outfit For:", selectionItems = OutfitAge.values().map { it.age })
-            FeaturesDialogSelection(fieldValue = outfitGenderState, text = "Outfit Gender:", selectionItems = OutfitGender.values().map { it.gender })
+            FeaturesDialogInput(fieldValue = outfitSeasonState, text = "Outfit Season:", readOnly = true)
+            FeaturesDialogInput(fieldValue = outfitOccasionState, text = "Outfit Occasion:", readOnly = true)
+            FeaturesDialogInput(fieldValue = outfitAgeState, text = "Outfit For:", readOnly = true)
+            FeaturesDialogInput(fieldValue = outfitGenderState, text = "Outfit Gender:", readOnly = true)
         }
 
         outfit.name = outfitNameState.value
-        outfit.season = outfitSeasonState.value
-        outfit.occasion = outfitOccasionState.value
-        outfit.age = outfitAgeState.value
-        outfit.gender = outfitGenderState.value
 
-        checkOutfitFeatures(outfit, saveButtonState)
+        saveButtonState.value = outfit.name.isNotEmpty()
     }
 
     @Composable
-    fun FeaturesDialogFooter(displayDialogState: MutableState<Boolean>, outfit: FirebaseOutfitModel, saveButtonState: MutableState<Boolean>)
+    fun SaveDialogFooter(displayDialogState: MutableState<Boolean>, saveButtonState: MutableState<Boolean>)
     {
         Row (
             verticalAlignment = Alignment.CenterVertically,
@@ -582,33 +565,12 @@ class CreateOutfitsActivity: ComponentActivity() {
         }
     }
 
-    private fun assembleOutfit(): FirebaseOutfitModel
-    {
-        val outfit = FirebaseOutfitModel(
-            headItemID = if(headItem.value != null) headItem.value?.key else null,
-            feetItemID = feetItem.value?.key
-        )
-
-        if(longOutfitChosen) {
-            outfit.type = "Long"
-            outfit.longItemID = longItem.value?.key
-        }
-        else{
-            outfit.type = "Short"
-            outfit.upperBodyItemID = upperBodyItem.value?.key
-            outfit.lowerBodyItemID = lowerBodyItem.value?.key
-        }
-
-        return outfit
-    }
-
     @Composable
-    fun FeaturesDialog(displayDialogState: MutableState<Boolean>)
+    fun SaveDialog(showSaveDialog: MutableState<Boolean>)
     {
-        val outfit = assembleOutfit()
-        val saveButtonState = remember{ mutableStateOf(false) }
+        val enableSaveButton = remember { mutableStateOf(false) }
 
-        Dialog(onDismissRequest = {  }) {
+        Dialog(onDismissRequest = { showSaveDialog.value = false }) {
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = Color.White
@@ -619,61 +581,32 @@ class CreateOutfitsActivity: ComponentActivity() {
                     .padding(8.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                FeaturesDialogHeader()
-                FeaturesDialogContent(outfit, saveButtonState)
-                FeaturesDialogFooter(displayDialogState, outfit, saveButtonState)
+                SaveDialogHeader()
+                SaveDialogContent(enableSaveButton)
+                SaveDialogFooter(showSaveDialog, enableSaveButton)
             }
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun TopBar()
+    fun GenerateOutfitButton()
     {
-        val color = Color(getColor(R.color.primary_orange))
-        val disabledColor = Color(getColor(R.color.secondary_orange))
-
         val displayFeaturesDialog = remember{ mutableStateOf(false) }
 
-        CenterAlignedTopAppBar (
-            navigationIcon = {
-                IconButton(onClick = { finish() }) {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowBack,
-                        contentDescription = "Icon",
-                        tint = color
-                    )
-                }
-            },
-
-            title = {
-                Text(
-                    text = "Create Outfit",
-                    color = color,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 26.sp
-                )
-            },
-
-            actions = {
-                IconButton(
-                    onClick = { displayFeaturesDialog.value = true },
-                    enabled = enableSaveButton.value
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.CheckCircle,
-                        contentDescription = "Icon",
-                        tint = if(enableSaveButton.value) color else disabledColor
-                    )
-                }
-            },
-
-            colors = TopAppBarDefaults.smallTopAppBarColors(
-                containerColor = Color.Transparent
+        FloatingActionButton(
+            containerColor = Color(getColor(R.color.primary_orange)),
+            onClick = {
+                displayFeaturesDialog.value = true
+            }
+        ) {
+            Icon(
+                Icons.Filled.Replay,
+                contentDescription = "Icon",
+                tint = Color.White
             )
-        )
+        }
 
-        if (displayFeaturesDialog.value) FeaturesDialog(displayFeaturesDialog)
+        if (displayFeaturesDialog.value) ChooseOutfitFeaturesDialog(displayDialogState = displayFeaturesDialog)
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -683,6 +616,7 @@ class CreateOutfitsActivity: ComponentActivity() {
         Scaffold(
             topBar = { TopBar() },
             containerColor = Color.Transparent,
+            floatingActionButton = { GenerateOutfitButton() },
             modifier = Modifier
                 .fillMaxSize()
         ) { paddingValues ->
@@ -693,16 +627,32 @@ class CreateOutfitsActivity: ComponentActivity() {
                     .padding(paddingValues)
                     .fillMaxSize()
             ) {
-                if (longOutfitChosen)
+                if (outfitItems.value is LongOutfit)
                     LongOutfitScaffoldBody()
-                else
-                    MultipleItemsOutfitScaffoldBody()
+                else if(outfitItems.value is ShortOutfit)
+                    ShortOutfitScaffoldBody()
             }
         }
     }
 
     @Composable
-    fun MultipleItemsOutfitScaffoldBody()
+    fun DisplayItem(item: FirebaseClothingItem?, sizes: Pair<Dp, Dp>) {
+        AsyncImage(
+            model = item?.clothingItemData?.uri,
+            contentDescription = item?.clothingItemData?.name,
+            modifier = Modifier
+                .width(sizes.first)
+                .height(sizes.second)
+                .clickable {
+                    val intent = Intent(baseContext, ClothesInfoActivity::class.java)
+                    intent.putExtra("item_info", item)
+                    startActivity(intent)
+                }
+        )
+    }
+
+    @Composable
+    fun ShortOutfitScaffoldBody()
     {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -710,17 +660,15 @@ class CreateOutfitsActivity: ComponentActivity() {
             modifier = Modifier
                 .wrapContentSize()
         ) {
-            if(headItem.value == null) AddItemButton(CHOOSE_HEAD_ITEM, headItemSizes)
-            else DisplayItem(headItem, CHOOSE_HEAD_ITEM, headItemSizes)
+            val shortOutfit = outfitItems.value as ShortOutfit
 
-            if(upperBodyItem.value == null) AddItemButton(CHOOSE_UPPER_BODY_ITEM, upperBodyItemSizes)
-            else DisplayItem(upperBodyItem, CHOOSE_UPPER_BODY_ITEM, upperBodyItemSizes)
+            if(shortOutfit.headItem != null) DisplayItem(shortOutfit.headItem, headItemSizes)
 
-            if(lowerBodyItem.value == null) AddItemButton(CHOOSE_LOWER_BODY_ITEM, lowerBodyItemSizes)
-            else DisplayItem(lowerBodyItem, CHOOSE_LOWER_BODY_ITEM, lowerBodyItemSizes)
+            DisplayItem(shortOutfit.upperBodyItem, upperBodyItemSizes)
 
-            if(feetItem.value == null) AddItemButton(CHOOSE_FEET_ITEM, feetItemSizes)
-            else DisplayItem(feetItem, CHOOSE_FEET_ITEM, feetItemSizes)
+            DisplayItem(shortOutfit.lowerBodyItem, lowerBodyItemSizes)
+
+            DisplayItem(shortOutfit.feetItem, feetItemSizes)
         }
     }
 
@@ -733,46 +681,21 @@ class CreateOutfitsActivity: ComponentActivity() {
             modifier = Modifier
                 .wrapContentSize()
         ) {
-            if(headItem.value == null) AddItemButton(CHOOSE_HEAD_ITEM, headItemSizes)
-            else DisplayItem(headItem, CHOOSE_HEAD_ITEM, headItemSizes)
+            val longOutfit = outfitItems.value as LongOutfit
 
-            if(longItem.value == null) AddItemButton(CHOOSE_LONG_ITEM, longItemSizes)
-            else DisplayItem(longItem, CHOOSE_LONG_ITEM, longItemSizes)
+            if(longOutfit.headItem != null) DisplayItem(longOutfit.headItem, headItemSizes)
 
-            if(feetItem.value == null) AddItemButton(CHOOSE_FEET_ITEM, feetItemSizes)
-            else DisplayItem(feetItem, CHOOSE_FEET_ITEM, feetItemSizes)
+            DisplayItem(longOutfit.longItem, longItemSizes)
+
+            DisplayItem(longOutfit.feetItem, feetItemSizes)
         }
     }
 
-    enum class OutfitSeason(
-        val season: String
+    enum class OutfitType(
+        val type: String
     ){
-        SPRING("Spring"),
-        SUMMER("Summer"),
-        AUTUMN("Autumn"),
-        WINTER("Winter")
+        LONG("Long"),
+        SHORT("Short")
     }
 
-    enum class OutfitOccasions(
-        val occasion: String
-    ){
-        FORMAL("Formal"),
-        CASUAL("Casual"),
-        HOUSE("House"),
-        PROFESSIONAL("Professional")
-    }
-
-    enum class OutfitAge(
-        val age: String
-    ){
-        ADULT("Adult"),
-        CHILD("Child")
-    }
-
-    enum class OutfitGender(
-        val gender: String
-    ){
-        MALE("Male"),
-        FEMALE("Female")
-    }
 }

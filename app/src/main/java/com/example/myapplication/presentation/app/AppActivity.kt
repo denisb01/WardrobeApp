@@ -38,7 +38,6 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Help
-import androidx.compose.material.icons.filled.HelpCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Man
 import androidx.compose.material.icons.filled.ManageAccounts
@@ -368,8 +367,8 @@ class AppActivity: ComponentActivity() {
 
             DialogInput(fieldValue = nameState, text = "Item Name:", readOnly = false)
             DialogInput(fieldValue = typeState, text = "Item Type:", readOnly = true)
-            DialogInput(fieldValue = colorState, text = "Item Color:", readOnly = false)
-            DialogInput(fieldValue = materialState, text = "Item Material:", readOnly = false)
+            DialogSelection(fieldValue = colorState, text = "Item Color:", selectionItems = ClothingItemColor.values().map { it.color })
+            DialogSelection(fieldValue = materialState, text = "Item Material:", selectionItems = ClothingItemMaterial.values().map { it.material })
 
             when(typeState.value){
                 "Shoes" -> DialogSelection(fieldValue = sizeState, text = "Item Size:", listOf("36","37","38","39","40","41","42","43","44","45","46"))
@@ -999,5 +998,43 @@ class AppActivity: ComponentActivity() {
         } catch (e: ActivityNotFoundException) {
             Toast.makeText(currentContext, "Couldn't start the camera!", Toast.LENGTH_LONG).show()
         }
+    }
+
+    enum class ClothingItemColor(
+        val color: String, val index: Int
+    ){
+        BLACK("Black", 0),
+        WHITE("White", 1),
+        GRAY("Gray", 2),
+        BEIGE("Beige", 3),
+        RED("Red", 4),
+        GREEN("Green", 5),
+        BLUE("Blue", 6),
+        YELLOW("Yellow", 7),
+        ORANGE("Orange", 8),
+        PINK("Pink", 9),
+        PURPLE("Purple", 10),
+        BROWN("Brown", 11),
+        TEAL("Teal", 12),
+        MAROON("Maroon", 13)
+    }
+
+    enum class ClothingItemMaterial(
+        val material: String, val index: Int
+    ){
+        COTTON("Cotton", 0),
+        POLYESTER("Polyester", 1),
+        WOOL("Wool", 2),
+        NYLON("Nylon", 3),
+        SPANDEX("Spandex", 4),
+        RAYON("Rayon", 5),
+        LEATHER("Leather",6),
+        SYN_LEATHER("Synthetic Leather", 7),
+        DENIM("Denim", 8),
+        SILK("Silk", 9),
+        ACRYLIC("Acrylic", 10),
+        CANVAS("Canvas", 11),
+        RUBBER("Rubber", 12),
+        SUEDE("Suede", 13)
     }
 }
