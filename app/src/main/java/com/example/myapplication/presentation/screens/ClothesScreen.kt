@@ -46,7 +46,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -59,7 +58,7 @@ import com.example.myapplication.presentation.app.AppActivity
 import com.example.myapplication.presentation.app.ClothesInfoActivity
 
 val imagesList = mutableStateOf(listOf<FirebaseClothingItem>())
-var fullImagesList = listOf<FirebaseClothingItem>()
+var fullClothingItemsList = listOf<FirebaseClothingItem>()
 
 val clothesSearchCriteria = mutableStateOf("")
 
@@ -71,12 +70,12 @@ fun displayImageCards(list: List<FirebaseClothingItem>)
 fun displaySearchedImages()
 {
     if (clothesSearchCriteria.value.isEmpty()){
-        displayImageCards(fullImagesList)
+        displayImageCards(fullClothingItemsList)
     }
     else{
         val searchValuesList = mutableListOf<FirebaseClothingItem>()
 
-        for (image in fullImagesList){
+        for (image in fullClothingItemsList){
             if(image.clothingItemData.name.toLowerCase().contains(clothesSearchCriteria.value.toLowerCase())){
                 searchValuesList.add(image)
             }
@@ -96,7 +95,7 @@ fun ClothesScreen(navController: NavController, context: Context)
             .background(Color.Transparent)
     ){
         val imagesListFlow = firebaseController.getImages(auth.currentUser!!)
-        fullImagesList = imagesListFlow.collectAsState(emptyList()).value
+        fullClothingItemsList = imagesListFlow.collectAsState(emptyList()).value
 
         displaySearchedImages()
 

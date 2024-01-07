@@ -72,7 +72,7 @@ import com.example.myapplication.data.outfits.LongOutfit
 import com.example.myapplication.data.outfits.Outfit
 import com.example.myapplication.data.outfits.ShortOutfit
 import com.example.myapplication.database.FirebaseController
-import com.example.myapplication.presentation.screens.fullImagesList
+import com.example.myapplication.presentation.screens.fullClothingItemsList
 import com.example.myapplication.presentation.screens.fullOutfitsList
 import com.example.myapplication.suggestion.ContentBasedFiltering
 import com.google.firebase.Firebase
@@ -339,7 +339,7 @@ class OutfitGenerationActivity: ComponentActivity() {
     private fun generateLongOutfit()
     {
         val generateOutfits = ContentBasedFiltering()
-        val longOutfit = generateOutfits.generateLongOutfit(fullImagesList, fullOutfitsList, outfit)
+        val longOutfit = generateOutfits.generateLongOutfit(fullClothingItemsList, fullOutfitsList, outfit)
 
         outfitItems.value = longOutfit
 
@@ -351,7 +351,7 @@ class OutfitGenerationActivity: ComponentActivity() {
     private fun generateShortOutfit()
     {
         val generateOutfits = ContentBasedFiltering()
-        val shortOutfit = generateOutfits.generateShortOutfit(fullImagesList, fullOutfitsList, outfit)
+        val shortOutfit = generateOutfits.generateShortOutfit(fullClothingItemsList, fullOutfitsList, outfit)
 
         outfitItems.value = shortOutfit
 

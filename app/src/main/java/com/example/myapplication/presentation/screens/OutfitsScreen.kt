@@ -258,8 +258,6 @@ fun AddOutfitsButton(context: Context)
 
 }
 
-// TODO Fix refreshing
-
 @Composable
 fun Window(paddingValues: PaddingValues, context: Context)
 {
@@ -357,7 +355,7 @@ fun OutfitCard(context: Context, outfit: FirebaseOutfit)
 }
 
 fun findClothingItemByID(id: String): FirebaseClothingItem {
-    for (clothing in fullImagesList){
+    for (clothing in fullClothingItemsList){
         if(clothing.key == id) return clothing
     }
 

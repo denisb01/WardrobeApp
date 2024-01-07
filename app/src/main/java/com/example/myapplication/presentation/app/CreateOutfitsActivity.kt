@@ -528,18 +528,21 @@ class CreateOutfitsActivity: ComponentActivity() {
         val outfitGenderState = remember{ mutableStateOf(outfit.gender) }
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp), horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.8f)
         ) {
             FeaturesDialogInput(fieldValue = outfitNameState, text = "Outfit Name:")
             FeaturesDialogInput(fieldValue = outfitTypeState, text = "Outfit Type:", readOnly = true)
-            FeaturesDialogSelection(fieldValue = outfitSeasonState, text = "Outfit Season:", selectionItems = OutfitSeason.values().map { it.season })
-            FeaturesDialogSelection(fieldValue = outfitOccasionState, text = "Outfit Occasion:", selectionItems = OutfitOccasions.values().map { it.occasion })
-            FeaturesDialogSelection(fieldValue = outfitAgeState, text = "Outfit For:", selectionItems = OutfitAge.values().map { it.age })
-            FeaturesDialogSelection(fieldValue = outfitGenderState, text = "Outfit Gender:", selectionItems = OutfitGender.values().map { it.gender })
+            FeaturesDialogSelection(fieldValue = outfitSeasonState, text = "Outfit Season:",
+                selectionItems = OutfitSeason.values().map { it.season })
+            FeaturesDialogSelection(fieldValue = outfitOccasionState, text = "Outfit Occasion:",
+                selectionItems = OutfitOccasions.values().map { it.occasion })
+            FeaturesDialogSelection(fieldValue = outfitAgeState, text = "Outfit For:",
+                selectionItems = OutfitAge.values().map { it.age })
+            FeaturesDialogSelection(fieldValue = outfitGenderState, text = "Outfit Gender:",
+                selectionItems = OutfitGender.values().map { it.gender })
         }
 
         outfit.name = outfitNameState.value
@@ -631,6 +634,7 @@ class CreateOutfitsActivity: ComponentActivity() {
     fun TopBar()
     {
         val color = Color(getColor(R.color.primary_orange))
+
         val disabledColor = Color(getColor(R.color.secondary_orange))
 
         val displayFeaturesDialog = remember{ mutableStateOf(false) }
@@ -645,7 +649,6 @@ class CreateOutfitsActivity: ComponentActivity() {
                     )
                 }
             },
-
             title = {
                 Text(
                     text = "Create Outfit",
@@ -654,7 +657,6 @@ class CreateOutfitsActivity: ComponentActivity() {
                     fontSize = 26.sp
                 )
             },
-
             actions = {
                 IconButton(
                     onClick = { displayFeaturesDialog.value = true },
@@ -667,7 +669,6 @@ class CreateOutfitsActivity: ComponentActivity() {
                     )
                 }
             },
-
             colors = TopAppBarDefaults.smallTopAppBarColors(
                 containerColor = Color.Transparent
             )
@@ -693,10 +694,8 @@ class CreateOutfitsActivity: ComponentActivity() {
                     .padding(paddingValues)
                     .fillMaxSize()
             ) {
-                if (longOutfitChosen)
-                    LongOutfitScaffoldBody()
-                else
-                    MultipleItemsOutfitScaffoldBody()
+                if (longOutfitChosen) LongOutfitScaffoldBody()
+                else MultipleItemsOutfitScaffoldBody()
             }
         }
     }

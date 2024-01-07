@@ -902,14 +902,6 @@ class AppActivity: ComponentActivity() {
                         startActivity(intent)
                     }
                 )
-
-                DrawerButton(
-                    buttonIcon = Icons.Filled.Info,
-                    buttonText = "App Info",
-                    buttonAction = {
-
-                    }
-                )
             }
         }
     }

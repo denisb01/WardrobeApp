@@ -59,7 +59,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.myapplication.R
 import com.example.myapplication.data.firebase.FirebaseClothingItem
-import com.example.myapplication.presentation.screens.fullImagesList
+import com.example.myapplication.presentation.screens.fullClothingItemsList
 
 class ChooseClothesActivity: ComponentActivity() {
 
@@ -67,8 +67,20 @@ class ChooseClothesActivity: ComponentActivity() {
         val SPEECH_TO_TEXT = 500
     }
 
+    private val clothingItemType: HashMap<String, String> = hashMapOf(
+        "Hat" to "Head",
+        "Longsleeve" to "Upper",
+        "Shortsleeve" to "Upper",
+        "Dress" to "Long",
+        "Pants" to "Lower",
+        "Shorts" to "Lower",
+        "Skirt" to "Lower",
+        "Shoes" to "Feet"
+    )
+
     private var requestCode = 0
     private val requestedTypeItems = mutableListOf<FirebaseClothingItem>()
+
     private val queriedItems = mutableStateOf(listOf<FirebaseClothingItem>())
     private val searchQuery = mutableStateOf("")
 
@@ -85,11 +97,11 @@ class ChooseClothesActivity: ComponentActivity() {
             }
 
             when(requestCode){
-                CreateOutfitsActivity.CHOOSE_HEAD_ITEM -> { selectHeadItems() }
-                CreateOutfitsActivity.CHOOSE_UPPER_BODY_ITEM -> { selectUpperBodyItems() }
-                CreateOutfitsActivity.CHOOSE_LONG_ITEM -> { selectLongItems() }
-                CreateOutfitsActivity.CHOOSE_LOWER_BODY_ITEM -> { selectLowerBodyItems() }
-                CreateOutfitsActivity.CHOOSE_FEET_ITEM -> { selectFeetItems() }
+                CreateOutfitsActivity.CHOOSE_HEAD_ITEM -> { getAllItemsOfType("Head") }
+                CreateOutfitsActivity.CHOOSE_UPPER_BODY_ITEM -> { getAllItemsOfType("Upper") }
+                CreateOutfitsActivity.CHOOSE_LONG_ITEM -> { getAllItemsOfType("Long") }
+                CreateOutfitsActivity.CHOOSE_LOWER_BODY_ITEM -> { getAllItemsOfType("Lower") }
+                CreateOutfitsActivity.CHOOSE_FEET_ITEM -> { getAllItemsOfType("Feet") }
             }
 
             queriedItems.value = requestedTypeItems
@@ -140,48 +152,9 @@ class ChooseClothesActivity: ComponentActivity() {
         }
     }
 
-    private fun selectHeadItems(){
-        for (item in fullImagesList){
-            if (item.clothingItemData.type == "Hat"){
-                requestedTypeItems.add(item)
-            }
-        }
-    }
-
-    private fun selectUpperBodyItems(){
-        for (item in fullImagesList){
-            if (
-                item.clothingItemData.type == "Longsleeve" ||
-                item.clothingItemData.type == "Shortsleeve"
-                ){
-                requestedTypeItems.add(item)
-            }
-        }
-    }
-
-    private fun selectLongItems(){
-        for (item in fullImagesList){
-            if (item.clothingItemData.type == "Dress"){
-                requestedTypeItems.add(item)
-            }
-        }
-    }
-
-    private fun selectLowerBodyItems(){
-        for (item in fullImagesList){
-            if (
-                item.clothingItemData.type == "Pants" ||
-                item.clothingItemData.type == "Shorts" ||
-                item.clothingItemData.type == "Skirt"
-                ){
-                requestedTypeItems.add(item)
-            }
-        }
-    }
-
-    private fun selectFeetItems(){
-        for (item in fullImagesList){
-            if (item.clothingItemData.type == "Shoes"){
+    private fun getAllItemsOfType(type: String){
+        for (item in fullClothingItemsList){
+            if (clothingItemType[item.clothingItemData.type] == type){
                 requestedTypeItems.add(item)
             }
         }
